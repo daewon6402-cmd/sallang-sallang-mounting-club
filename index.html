@@ -1,0 +1,1193 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2F4A3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="출석부">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="config.js"></script>
+<title>산행 출석부</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gothic+A1:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8ECE5; --surface:#F7F8F4; --surface2:#EEF1EB; --ink:#1D2620; --muted:#59675E; --line:#CDD5CA;
+  --ridge:#2F4A3A; --accent:#3D6A50; --accent-ink:#FFFFFF;
+  --ok:#23794A; --ok-bg:#D7EEDF; --warn:#8A6200; --warn-bg:#FBEBB8; --bad:#B42F22; --bad-bg:#F7D9D4;
+  --sun:#B5473A; --sat:#3B5F99;
+  --display:"Do Hyeon","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#121815; --surface:#1A221D; --surface2:#212B25; --ink:#E4EBE5; --muted:#9BA9A0; --line:#2F3B34;
+    --ridge:#A3C9AE; --accent:#7DB592; --accent-ink:#0E1A13;
+    --ok:#6FD39A; --ok-bg:#183A27; --warn:#F0C24B; --warn-bg:#3A2F0E; --bad:#FF8A7A; --bad-bg:#43201B;
+    --sun:#F08C80; --sat:#8EB0EA; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121815; --surface:#1A221D; --surface2:#212B25; --ink:#E4EBE5; --muted:#9BA9A0; --line:#2F3B34;
+  --ridge:#A3C9AE; --accent:#7DB592; --accent-ink:#0E1A13;
+  --ok:#6FD39A; --ok-bg:#183A27; --warn:#F0C24B; --warn-bg:#3A2F0E; --bad:#FF8A7A; --bad-bg:#43201B;
+  --sun:#F08C80; --sat:#8EB0EA; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 48px}
+
+/* header */
+.top{position:relative;padding:28px 0 0}
+.top-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,6vw,52px);line-height:1;margin:0;color:var(--ridge);letter-spacing:-.01em}
+.sync{margin:8px 0 0;color:var(--muted);font-size:13px}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{display:flex;align-items:baseline;gap:6px;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:500}
+.stat b{font-family:var(--display);font-weight:400;font-size:22px;line-height:1}
+.stat.ok{background:var(--ok-bg);color:var(--ok)} .stat.warn{background:var(--warn-bg);color:var(--warn)} .stat.bad{background:var(--bad-bg);color:var(--bad)}
+.ridge{display:block;width:100%;height:46px;margin-top:14px}
+.ridge path{fill:none;stroke:var(--ridge);stroke-width:2;stroke-linejoin:round;opacity:.55}
+.ridge .fill{fill:var(--ridge);stroke:none;opacity:.08}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--ridge);margin-bottom:20px}
+.tabs button{background:none;border:0;padding:10px 22px 8px;font-family:var(--display);font-size:22px;color:var(--muted);border-radius:10px 10px 0 0}
+.tabs button[aria-selected="true"]{background:var(--ridge);color:var(--bg)}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.panel h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.att-grid{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:18px;align-items:start}
+.pay-grid{display:grid;grid-template-columns:minmax(240px,300px) 1fr;gap:18px;align-items:start}
+@media (max-width:860px){.att-grid,.pay-grid{grid-template-columns:1fr}}
+.att-grid>*,.pay-grid>*{min-width:0}
+.tabs button{white-space:nowrap}
+@media (max-width:560px){.tabs button{font-size:18px;padding:9px 14px 7px}}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 13px;font-size:14px;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--bad);border-color:var(--bad-bg)}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.ro .needs-write{display:none!important}
+input[type=text],input[type=date],input[type=number],select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:15px}
+textarea{resize:vertical;min-height:60px}
+label.f{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px;font-weight:500}
+
+/* members */
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--muted);margin-bottom:12px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+.add-row{display:flex;gap:6px;margin-bottom:10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:none;padding:4px 10px;font-size:12px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface2);color:var(--ink);font-weight:700}
+.mlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.mrow{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 10px;text-align:left;border:1px solid transparent;background:var(--surface2);border-radius:10px;padding:9px 12px}
+.mrow:hover{border-color:var(--line)}
+.mname{font-weight:700;font-size:16px;padding:2px 10px;border-radius:7px}
+.lv-ok .mname{background:var(--ok-bg);color:var(--ok)}
+.lv-warn .mname{background:var(--warn-bg);color:var(--warn)}
+.lv-bad .mname{background:var(--bad-bg);color:var(--bad)}
+.mlast{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mbadge{font-size:12.5px;font-weight:700;text-align:right;white-space:nowrap}
+.lv-ok .mbadge{color:var(--ok)} .lv-warn .mbadge{color:var(--warn)} .lv-bad .mbadge{color:var(--bad)}
+.empty{color:var(--muted);font-size:14px;padding:18px 4px;text-align:center}
+.dot.out{background:var(--bad);box-shadow:0 0 0 2px var(--bad-bg)}
+.dot.staff{background:var(--ridge)}
+.lv-staff .mname{background:var(--surface);color:var(--ridge);box-shadow:inset 0 0 0 1px var(--ridge)}
+.lv-staff .mbadge{color:var(--muted)}
+.tag.staff{color:var(--ridge);border-color:var(--ridge)}
+.tag.leave{color:var(--warn);border-color:var(--warn)}
+.lv-out .mname{background:var(--bad);color:var(--surface)}
+.lv-out .mbadge{color:var(--bad)}
+.lv-out{border-color:var(--bad)!important}
+.tag{margin-left:6px;font-size:11px;font-weight:700;border-radius:5px;padding:0 5px;vertical-align:2px;background:var(--surface);color:var(--sat);border:1px solid var(--sat)}
+.mlast b{color:var(--ink);font-weight:700;margin-right:4px}
+.msum{display:flex;flex-wrap:wrap;gap:6px 18px;background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--muted)}
+.msum b{display:block;font-family:var(--display);font-weight:400;font-size:22px;color:var(--ink);line-height:1.1}
+.bars{display:flex;align-items:flex-end;gap:8px;height:92px;margin-top:6px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;font-size:11.5px;color:var(--muted);height:100%}
+.bar i{display:block;width:100%;max-width:36px;background:var(--accent);border-radius:5px 5px 2px 2px;min-height:2px}
+.bar span{font-variant-numeric:tabular-nums}
+.sbadge{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:0 6px;margin-left:6px;vertical-align:1px}
+.sbadge.todo{background:var(--bad-bg);color:var(--bad)}
+.sbadge.done{background:var(--ok-bg);color:var(--ok)}
+.hostwarn{color:var(--warn);font-size:12.5px;margin:4px 0 0}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px}
+body.ci-mode .wrap.main{display:none}
+#checkin{max-width:640px;margin:0 auto;padding:28px 20px 48px}
+#checkin .count{font-family:var(--display);font-size:20px;color:var(--ridge)}
+#ciList{margin-top:12px}
+#ciList .chip{font-size:16px;padding:9px 16px}
+.rank-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.rank-head .seg button{font-size:14px;padding:7px 14px}
+.rklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rk{display:grid;grid-template-columns:44px minmax(90px,1.2fr) 2fr auto;align-items:center;gap:10px;background:var(--surface2);border-radius:10px;padding:9px 12px}
+.rk .no{font-family:var(--display);font-size:24px;color:var(--muted);text-align:center;line-height:1}
+.rk.top .no{color:var(--ridge)}
+.rk.top{background:var(--ok-bg)}
+.rk .nm{font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk .nm small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.rk .track{height:10px;background:var(--bg);border-radius:6px;overflow:hidden}
+.rk .track i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.rk .val{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rk .val b{font-family:var(--display);font-weight:400;font-size:22px}
+.rk .val span{display:block;font-size:12px;color:var(--muted)}
+.zero{margin-top:16px;font-size:14px;color:var(--muted);line-height:1.8}
+.zero b{color:var(--ink)}
+@media (max-width:560px){.rk{grid-template-columns:36px 1fr auto}.rk .track{grid-column:2/4;grid-row:2}}
+
+/* calendar */
+.cal-head{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.cal-head h2{min-width:120px;text-align:center}
+.cal-head .spacer{flex:1}
+.navbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:18px;line-height:1}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);font-size:12px;color:var(--muted);text-align:center;margin-bottom:4px}
+.wk span:first-child{color:var(--sun)} .wk span:last-child{color:var(--sat)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cell{min-height:92px;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:5px 6px;text-align:left;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.cell:hover{border-color:var(--accent)}
+.cell.out{opacity:.4}
+.cell .dn{font-size:13px;font-weight:700}
+.cell.sun .dn{color:var(--sun)} .cell.sat .dn{color:var(--sat)}
+.cell.today{border:2px solid var(--ridge)}
+.ev{display:block;font-size:11.5px;line-height:1.3;background:var(--accent);color:var(--accent-ink);border-radius:5px;padding:2px 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:560px){
+  .cell{min-height:58px;padding:4px}
+  .ev{font-size:10px;padding:1px 3px}
+  .ev .evp{display:none}
+}
+
+/* settlement */
+.slist ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.sitem{width:100%;text-align:left;border:1px solid transparent;background:var(--surface2);border-radius:10px;padding:10px 12px}
+.sitem[aria-current="true"]{border-color:var(--accent);background:var(--bg)}
+.sitem .t{font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sitem .m{font-size:12.5px;color:var(--muted)}
+.row2{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+@media (max-width:560px){.row2{grid-template-columns:1fr}}
+.sec{margin-top:22px}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.sec-head h3{margin:0;font-size:16px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+th{font-size:12.5px;color:var(--muted);font-weight:500;background:var(--surface2)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.c,th.c{text-align:center}
+td input[type=text]{padding:6px 8px;min-width:90px}
+td input.amt{text-align:right;min-width:110px}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer}
+.xbtn{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px;border-radius:6px}
+.xbtn:hover{color:var(--bad);background:var(--bad-bg)}
+.totals{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.tot{flex:1 1 160px;background:var(--surface2);border-radius:10px;padding:10px 14px}
+.tot span{display:block;font-size:12.5px;color:var(--muted)}
+.tot b{font-family:var(--display);font-weight:400;font-size:26px;font-variant-numeric:tabular-nums}
+.addp{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.addp select{width:auto;min-width:140px}
+.foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin-top:22px}
+.paidrow td{opacity:.6}
+.fuelbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:var(--surface2);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:8px}
+.fuelbar label{display:inline-flex;align-items:center;gap:6px}
+.fuelbar input.mini{width:84px;padding:5px 8px;text-align:right}
+.fuelbar a{color:var(--accent);font-weight:700;text-decoration:none}
+.fuelbar a:hover{text-decoration:underline}
+.car{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px}
+.car-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.car-top select{width:auto;min-width:150px}
+.car-top .grow{flex:1}
+.car-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.car-grid label{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+@media (max-width:640px){.car-grid{grid-template-columns:1fr 1fr}}
+.car-out{margin:10px 0 0;font-size:14px;font-weight:500}
+.pre{background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:12px;margin:10px 0 4px}
+.pre h4,.sub-h{margin:0 0 4px;font-size:15px}
+.sub-h{margin-top:18px}
+.pre-head{display:flex;align-items:center;gap:6px;margin:12px 0 8px}
+td input.mini{width:64px;min-width:0;text-align:right;padding:5px 8px}
+
+/* dialogs */
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 40px)}
+dialog::backdrop{background:rgba(10,20,14,.45)}
+.dlg{padding:20px 20px 16px;max-height:calc(100vh - 40px);overflow:auto}
+.dlg h2{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 4px}
+.dlg .sub{color:var(--muted);font-size:13px;margin:0}
+.dlg-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+.dlg-foot .grow{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.chip.ver[aria-pressed="true"]{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.dupflag{margin-left:6px;font-size:11px;font-weight:700;color:var(--bad);background:var(--surface);border:1px solid var(--bad);border-radius:5px;padding:0 5px;vertical-align:2px}
+.others{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:13px}
+.hist{list-style:none;margin:6px 0 0;padding:0;font-size:14px;max-height:180px;overflow:auto}
+.hist li{padding:5px 0;border-bottom:1px solid var(--line)}
+.hist li span{color:var(--muted);margin-right:8px;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div id="checkin" hidden>
+  <h1 id="ciClub">산행 출석부</h1>
+  <section class="panel" style="margin-top:18px">
+    <h2 id="ciTitle">불러오는 중…</h2>
+    <p class="sub" id="ciSub"></p>
+    <p class="count" id="ciCount"></p>
+    <input type="text" id="ciSearch" placeholder="내 닉네임 검색" autocomplete="off" style="margin-top:6px">
+    <div class="chips" id="ciList"></div>
+    <p class="sub" style="margin-top:14px">내 닉네임을 누르면 참석으로 표시돼요. 잘못 눌렀으면 한 번 더 누르면 취소돼요.</p>
+  </section>
+</div>
+<div class="wrap main">
+  <header class="top">
+    <div class="top-row">
+      <div>
+        <h1 id="clubName">산행 출석부</h1>
+        <p class="sync" id="sync">불러오는 중…</p>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <svg class="ridge" viewBox="0 0 1000 46" preserveAspectRatio="none" aria-hidden="true">
+      <path class="fill" d="M0 46 L0 38 L70 30 L120 34 L190 14 L240 24 L300 6 L360 22 L410 18 L470 32 L540 12 L600 20 L650 4 L720 26 L780 18 L850 30 L910 22 L1000 34 L1000 46 Z"/>
+      <path d="M0 38 L70 30 L120 34 L190 14 L240 24 L300 6 L360 22 L410 18 L470 32 L540 12 L600 20 L650 4 L720 26 L780 18 L850 30 L910 22 L1000 34"/>
+    </svg>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="t-att" aria-selected="true" aria-controls="tab-att">출석</button>
+    <button role="tab" id="t-pay" aria-selected="false" aria-controls="tab-pay">정산</button>
+    <button role="tab" id="t-rank" aria-selected="false" aria-controls="tab-rank">참석률</button>
+  </nav>
+
+  <main>
+    <section id="tab-att" role="tabpanel" aria-labelledby="t-att">
+      <div class="att-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>회원 현황</h2>
+            <div style="display:flex;gap:6px;align-items:center">
+              <div class="seg" role="group" aria-label="정렬">
+                <button data-sort="urgent" aria-pressed="true">급한 순</button>
+                <button data-sort="name" aria-pressed="false">이름순</button>
+              </div>
+              <button class="btn small" id="btnCfg">기준</button>
+            </div>
+          </div>
+          <div class="legend" id="legend"></div>
+          <div class="add-row needs-write">
+            <input type="text" id="newMember" placeholder="이름 또는 카톡 닉네임 그대로 (83/디디/달서구/남)" autocomplete="off">
+            <button class="btn primary" id="btnAddMember">추가</button>
+          </div>
+          <ul class="mlist" id="memberList"></ul>
+        </section>
+
+        <section class="panel">
+          <div class="cal-head">
+            <button class="navbtn" id="prevM" aria-label="이전 달">‹</button>
+            <h2 id="monthLabel"></h2>
+            <button class="navbtn" id="nextM" aria-label="다음 달">›</button>
+            <button class="btn small" id="todayM">오늘</button>
+            <span class="spacer"></span>
+            <button class="btn primary needs-write" id="btnNewEvent">산행 기록하기</button>
+          </div>
+          <div class="msum" id="monthSum"></div>
+          <div class="wk"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+          <div class="cal-grid" id="calGrid"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-pay" role="tabpanel" aria-labelledby="t-pay" hidden>
+      <div class="pay-grid">
+        <aside class="panel slist">
+          <div class="panel-head">
+            <h2>정산 목록</h2>
+            <button class="btn primary needs-write" id="btnNewSettle">새 정산</button>
+          </div>
+          <ul id="settleList"></ul>
+        </aside>
+        <section class="panel" id="settleEditor"></section>
+      </div>
+    </section>
+    <section id="tab-rank" role="tabpanel" aria-labelledby="t-rank" hidden>
+      <section class="panel">
+        <div class="rank-head">
+          <h2 id="rankTitle">참석 순위</h2>
+          <div class="seg" role="group" aria-label="기간">
+            <button data-rk="0" aria-pressed="true">이번 달</button>
+            <button data-rk="1" aria-pressed="false">지난달</button>
+          </div>
+        </div>
+        <div class="msum" id="rankSum"></div>
+        <ol class="rklist" id="rankList"></ol>
+        <div class="zero" id="rankZero"></div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<dialog id="evDlg"><div class="dlg" id="evBody"></div></dialog>
+<dialog id="memDlg"><div class="dlg" id="memBody"></div></dialog>
+<dialog id="cfgDlg"><div class="dlg" id="cfgBody"></div></dialog>
+<dialog id="askDlg"><div class="dlg">
+  <p id="askMsg" style="margin:0;font-size:16px"></p>
+  <div class="dlg-foot"><button class="btn" id="askNo">취소</button><button class="btn primary" id="askYes">확인</button></div>
+</div></dialog>
+<dialog id="copyDlg"><div class="dlg">
+  <h2 id="copyTitle">정산 내역</h2>
+  <p class="sub">단톡방에 붙여넣기 좋게 정리했어요.</p>
+  <textarea id="copyText" rows="14" style="margin-top:10px;font-size:14px"></textarea>
+  <div class="dlg-foot"><button class="btn" id="copyClose">닫기</button><button class="btn primary" id="copyDo">복사하기</button></div>
+</div></dialog>
+<dialog id="pwDlg"><div class="dlg">
+  <h2>운영진 비밀번호</h2>
+  <p class="sub">한 번 입력하면 이 기기에서는 다시 묻지 않아요.</p>
+  <input type="password" id="pwIn" style="margin-top:12px" autocomplete="current-password">
+  <div class="dlg-foot"><button class="btn primary" id="pwOk">들어가기</button></div>
+</div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const won=n=>Math.round(n||0).toLocaleString("ko-KR");
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pad=n=>String(n).padStart(2,"0");
+const fmt=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const today=()=>fmt(new Date());
+const parse=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const utc=s=>{const [y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)};
+const diffDays=(a,b)=>Math.round((utc(b)-utc(a))/864e5);
+const md=s=>{const d=parse(s);return (d.getMonth()+1)+"/"+d.getDate()};
+const dayLabel=s=>{const d=parse(s);return (d.getMonth()+1)+"월 "+d.getDate()+"일 ("+"일월화수목금토"[d.getDay()]+")"};
+
+const DEF={clubName:"산행 출석부",caution:20,warn:30,danger:50,exit:60,newbieDays:30,leaveDays:90,verifyFrom:"2026-10-27",fuelPrice:1830,fuelDate:"2026-10-08",eff:9};
+const state={members:{},events:{},settles:{},config:{}};
+const cfg=()=>Object.assign({},DEF,state.config.main||{});
+let mode="loading", db=null, readOnly=false;
+let sortMode="urgent";
+const now=new Date(); const view={y:now.getFullYear(),m:now.getMonth()};
+let selSettle=null, draft=null, dirty=false, saveTimer=null;
+
+/* ---------- storage ---------- */
+const LS="hiking-club-v1";
+function loadLocal(){try{const raw=localStorage.getItem(LS);if(raw){const o=JSON.parse(raw);["members","events","settles","config"].forEach(k=>state[k]=o[k]||{})}}catch(e){}}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){toast("이 브라우저에서는 저장이 막혀 있어요")}}
+const chains={};
+function queue(key,fn){const p=(chains[key]||Promise.resolve()).then(fn).catch(handleErr);chains[key]=p;return p}
+function handleErr(e){
+  if(isAuth(e)){askPw();return}
+  const c=e&&e.code;
+  if(c==="invalid_argument"||c==="not_granted"){setReadOnly();toast("보기 전용이라 저장할 수 없어요")}
+  else if(c==="quota_exceeded"){toast("저장 공간이 가득 찼어요. 오래된 정산을 지워 주세요")}
+  else {toast("저장하지 못했어요. 잠시 후 다시 시도해 주세요")}
+}
+function setReadOnly(){readOnly=true;document.body.classList.add("ro");renderSettleEditor()}
+function writeDoc(col,id,data){
+  if(readOnly){toast("보기 전용이라 저장할 수 없어요");return Promise.resolve()}
+  state[col][id]=Object.assign({},data,{id});
+  const body=JSON.parse(JSON.stringify(state[col][id]));
+  if(mode==="gas") return queue(col+"/"+id,()=>gas("put",col,id,JSON.stringify(body)));
+  saveLocal(); return Promise.resolve();
+}
+function removeDoc(col,id){
+  if(readOnly){toast("보기 전용이라 저장할 수 없어요");return Promise.resolve()}
+  delete state[col][id];
+  if(mode==="gas") return queue(col+"/"+id,()=>gas("remove",col,id));
+  saveLocal(); return Promise.resolve();
+}
+
+/* ---------- status ---------- */
+// 발사진 인증 기준일 이후 일정은 인증된 사람만 출석으로 인정
+function needsVerify(e){const v=cfg().verifyFrom;return !!v&&e.date>=v}
+function attended(e,id){return (e.attendees||[]).includes(id)&&(!needsVerify(e)||(e.verified||[]).includes(id))}
+function attendedIds(e){return (e.attendees||[]).filter(id=>attended(e,id))}
+function statusOf(m){
+  const t=today(), c=cfg(); let last=null, count=0;
+  for(const e of Object.values(state.events)){
+    if(e.date<=t&&attended(e,m.id)){count++;if(!last||e.date>last.date) last=e;}
+  }
+  const base=last?last.date:(m.since||t);
+  const days=Math.max(0,diffDays(base,t));
+  // 운영진: 참석 기간 제한 없음
+  if(m.staff)return {last,days,level:"staff",count,warned:false,toWarn:0,warnAt:0,exit:false,newbie:null,out:false,staff:true,leave:false,remain:Infinity};
+  // 휴식 회원(개인 사정): 퇴장 기준을 leaveDays로 늘리고 다른 기준도 같은 만큼 뒤로 미룸
+  const off=m.leave?Math.max(0,(+c.leaveDays||90)-c.exit):0;
+  const cau=c.caution+off, warnAt=c.warn+off, dan=c.danger+off, exitAt=c.exit+off;
+  let level=days>=dan?"bad":days>=cau?"warn":"ok";
+  const exit=days>=exitAt;
+  let newbie=null;
+  if(m.newbie&&!m.leave&&!count){const jd=Math.max(0,diffDays(m.since||t,t));newbie={left:c.newbieDays-jd,failed:jd>=c.newbieDays}}
+  const out=exit||!!(newbie&&newbie.failed);
+  if(out)level="out";
+  const remain=Math.min(exitAt-days,newbie?newbie.left:Infinity);
+  return {last,days,level,count,warned:days>=warnAt,toWarn:warnAt-days,warnAt,exitAt,exit,newbie,out,staff:false,leave:!!m.leave,remain};
+}
+function monthStats(y,m){
+  const pre=y+"-"+pad(m+1)+"-";
+  const evs=Object.values(state.events).filter(e=>e.date.startsWith(pre));
+  const per={};let total=0;
+  evs.forEach(e=>attendedIds(e).forEach(id=>{if(!state.members[id])return;per[id]=(per[id]||0)+1;total++}));
+  const n=Object.keys(state.members).length, u=Object.keys(per).length;
+  return {events:evs.length,total,per,unique:u,members:n,rate:n?Math.round(u/n*100):0,avg:evs.length?total/evs.length:0};
+}
+const memberName=id=>state.members[id]?state.members[id].name:"(삭제된 회원)";
+const sortedByName=()=>Object.values(state.members).sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+
+/* ---------- render: header ---------- */
+function renderHeader(){
+  const c=cfg();
+  $("#clubName").textContent=c.clubName||DEF.clubName;
+  document.title=c.clubName||DEF.clubName;
+  const cnt={ok:0,warn:0,bad:0,out:0,warned:0,staff:0};
+  Object.values(state.members).forEach(m=>{const s=statusOf(m);cnt[s.level]++;if(s.warned&&!s.out)cnt.warned++});
+  $("#stats").innerHTML=`<span class="stat ok"><b>${cnt.ok}</b>꾸준히</span><span class="stat warn"><b>${cnt.warn}</b>주의</span><span class="stat bad"><b>${cnt.bad}</b>위험</span><span class="stat bad" style="background:none;border:1px solid var(--bad)"><b>${cnt.warned}</b>경고 대상</span><span class="stat" style="background:var(--bad);color:var(--surface)"><b>${cnt.out}</b>퇴장 대상</span>`;
+  $("#legend").innerHTML=`<span><i class="dot ok"></i>${c.caution}일 미만</span><span><i class="dot warn"></i>${c.caution}일부터</span><span><i class="dot bad"></i>${c.danger}일부터</span><span>경고 ${c.warn}일</span><span><i class="dot out"></i>퇴장 대상 ${c.exit}일</span><span>신입은 가입 ${c.newbieDays}일 안에 첫 산행</span><span>운영진은 제한 없음, 휴식 회원은 퇴장 기준 ${c.leaveDays}일</span>`;
+}
+
+/* ---------- render: members ---------- */
+function renderMembers(){
+  const ul=$("#memberList");
+  const rows=Object.values(state.members).map(m=>({m,s:statusOf(m)}));
+  if(!rows.length){ul.innerHTML=`<li class="empty">회원을 추가하면 여기에 출석 상태가 표시돼요.</li>`;return}
+  const LV={out:0,bad:1,warn:2,ok:3,staff:4};
+  rows.sort(sortMode==="name"?(a,b)=>a.m.name.localeCompare(b.m.name,"ko"):(a,b)=>(LV[a.s.level]-LV[b.s.level])||(a.s.remain-b.s.remain)||(b.s.days-a.s.days)||a.m.name.localeCompare(b.m.name,"ko"));
+  const c=cfg(), ms=monthStats(view.y,view.m);
+  const nameCnt={};Object.values(state.members).forEach(x=>{const k=norm(x.name);nameCnt[k]=(nameCnt[k]||0)+1});
+  ul.innerHTML=rows.map(({m,s})=>{
+    const last=s.last?`${md(s.last.date)} ${esc(s.last.place||"장소 미기재")} · ${s.days}일 전`:`산행 기록 없음 · 기준일부터 ${s.days}일`;
+    let badge;
+    if(s.staff)badge="기간 제한 없음";
+    else if(s.newbie&&s.newbie.failed)badge="신입 미참여";
+    else if(s.exit)badge=`퇴장 대상 ${s.days}일`;
+    else if(s.newbie)badge=`첫 산행 D-${s.newbie.left}`;
+    else if(s.warned){const over=s.days-s.warnAt;badge=over===0?"오늘 경고":`경고 +${over}일`}
+    else badge=`경고까지 ${s.toWarn}일`;
+    return `<li><button class="mrow lv-${s.level}" data-mid="${esc(m.id)}"><span class="mname">${esc(m.name)}${s.staff?'<span class="tag staff">운영진</span>':''}${s.leave?'<span class="tag leave">휴식</span>':''}${s.newbie?'<span class="tag">신입</span>':''}${nameCnt[norm(m.name)]>1?'<span class="dupflag">중복?</span>':''}</span><span class="mlast"><b>${view.m+1}월 ${ms.per[m.id]||0}회</b>${last}</span><span class="mbadge">${badge}</span></button></li>`;
+  }).join("");
+}
+
+/* ---------- render: calendar ---------- */
+function eventsByDate(){const o={};Object.values(state.events).forEach(e=>{(o[e.date]=o[e.date]||[]).push(e)});return o}
+function renderCalendar(){
+  $("#monthLabel").textContent=`${view.y}년 ${view.m+1}월`;
+  const ms=monthStats(view.y,view.m);
+  $("#monthSum").innerHTML=`<span><b>${ms.events}회</b>일정</span><span><b>${ms.total}명</b>참석 연인원</span><span><b>${ms.unique}/${ms.members}명</b>한 번 이상 참여</span><span><b>${ms.rate}%</b>참여율</span><span><b>${ms.avg?ms.avg.toFixed(1):0}명</b>일정당 평균</span>`;
+  const first=new Date(view.y,view.m,1), start=first.getDay();
+  const total=Math.ceil((start+new Date(view.y,view.m+1,0).getDate())/7)*7;
+  const map=eventsByDate(), t=today();
+  let h="";
+  for(let i=0;i<total;i++){
+    const d=new Date(view.y,view.m,1-start+i), ds=fmt(d);
+    const cls=["cell"]; if(d.getMonth()!==view.m)cls.push("out"); if(d.getDay()===0)cls.push("sun"); if(d.getDay()===6)cls.push("sat"); if(ds===t)cls.push("today");
+    const evs=(map[ds]||[]).map(e=>`<span class="ev"><span class="evp">${esc(e.place||"산행")} </span>${needsVerify(e)?`인증 ${attendedIds(e).length}/${(e.attendees||[]).length}`:(e.attendees||[]).length+"명"}</span>`).join("");
+    h+=`<button class="${cls.join(" ")}" data-date="${ds}" aria-label="${dayLabel(ds)}${map[ds]?", 기록 "+map[ds].length+"건":""}"><span class="dn">${d.getDate()}</span>${evs}</button>`;
+  }
+  $("#calGrid").innerHTML=h;
+}
+
+/* ---------- event dialog ---------- */
+let ev=null;
+function openEvent(date,id){
+  if(readOnly&&!id&&!(eventsByDate()[date]||[]).length){toast("보기 전용이에요");return}
+  if(!id){const list=eventsByDate()[date]||[];if(list.length)id=list[0].id}
+  const e=id&&state.events[id];
+  ev=e?{id:e.id,date:e.date,place:e.place||"",memo:e.memo||"",att:new Set(e.attendees||[]),ver:new Set(e.verified||[]),host:e.host||""}:{id:null,date,place:"",memo:"",att:new Set(),ver:new Set()};
+  renderEvDlg(); if(!$("#evDlg").open)$("#evDlg").showModal();
+}
+function verChipsHtml(){
+  const ids=[...ev.att];
+  if(!ids.length)return `<span class="sub">참석자를 먼저 선택하면 여기서 인증을 체크할 수 있어요.</span>`;
+  return ids.map(id=>`<button class="chip ver" data-ver="${esc(id)}" aria-pressed="${ev.ver.has(id)}">${ev.ver.has(id)?"✓ ":""}${esc(memberName(id))}</button>`).join("");
+}
+function verCountText(){return `${[...ev.ver].filter(id=>ev.att.has(id)).length}/${ev.att.size}명 확인`}
+function refreshVer(){const a=$("#verChips");if(a)a.innerHTML=verChipsHtml();const b=$("#verCount");if(b)b.textContent=verCountText()}
+function renderEvDlg(){
+  ev.ver=ev.ver||new Set();
+  const members=sortedByName();
+  const others=(eventsByDate()[ev.date]||[]).filter(e=>e.id!==ev.id);
+  const chips=members.length?members.map(m=>{const s=statusOf(m);return `<button class="chip" data-att="${esc(m.id)}" aria-pressed="${ev.att.has(m.id)}"><i class="dot ${s.level}"></i>${esc(m.name)}</button>`}).join(""):`<span class="sub">아직 회원이 없어요. 아래에서 바로 추가할 수 있어요.</span>`;
+  $("#evBody").innerHTML=`
+    <h2>${ev.id?"산행 기록 수정":"산행 기록하기"}</h2>
+    <p class="sub">${dayLabel(ev.date)}</p>
+    ${others.length?`<div class="others">같은 날 다른 기록: ${others.map(o=>`<button class="btn small" data-goev="${esc(o.id)}">${esc(o.place||"산행")}</button>`).join("")}</div>`:""}
+    <label class="f" for="evDate">날짜</label><input type="date" id="evDate" value="${ev.date}">
+    <label class="f" for="evPlace">어디에 갔나요</label><input type="text" id="evPlace" value="${esc(ev.place)}" placeholder="예: 팔공산 동봉 코스">
+    <label class="f" for="evHost">벙주</label><select id="evHost"><option value="">선택 안 함</option>${members.map(m=>`<option value="${esc(m.id)}" ${m.id===ev.host?"selected":""}>${esc(m.name)}</option>`).join("")}</select>
+    <p class="hostwarn" id="hostWarn">${hostWarn(ev.host,ev.date,ev.id)}</p>
+    <label class="f">참석자 <span id="attCount">${ev.att.size}명</span></label>
+    <div class="chips" id="evChips">${chips}</div>
+    <div class="add-row needs-write" style="margin-top:8px"><input type="text" id="evNewMem" placeholder="명단에 없는 사람 추가" autocomplete="off"><button class="btn" id="evAddMem">추가</button></div>
+    <label class="f">발사진 인증 <span id="verCount">${verCountText()}</span></label>
+    ${needsVerify(ev)?`<p class="sub" style="margin:0 0 6px">발사진 인증을 체크한 사람만 출석으로 인정돼요.</p>`:""}
+    <div class="chips" id="verChips">${verChipsHtml()}</div>
+    <label class="f" for="evMemo">메모</label><textarea id="evMemo" rows="2" placeholder="날씨, 뒤풀이 장소 등">${esc(ev.memo)}</textarea>
+    <div class="dlg-foot">
+      ${ev.id?`<button class="btn danger needs-write" id="evDel">삭제</button><button class="btn needs-write" id="evToSettle">이 산행 정산하기</button><button class="btn" id="evLink">참석 체크 링크</button>`:""}
+      <span class="grow"></span>
+      ${ev.id?`<button class="btn needs-write" id="evNew">같은 날 새 기록</button>`:""}
+      <button class="btn" id="evCancel">닫기</button>
+      <button class="btn primary needs-write" id="evSave">저장</button>
+    </div>`;
+}
+function syncEvFields(){ev.date=$("#evDate").value||ev.date;ev.place=$("#evPlace").value.trim();ev.memo=$("#evMemo").value.trim();ev.host=$("#evHost").value}
+// 회칙: 벙 개설은 산행 1회 이상 참여한 회원
+function hostWarn(host,date,exceptId){
+  if(!host)return "";
+  const ok=Object.values(state.events).some(e=>e.id!==exceptId&&e.date<date&&attended(e,host));
+  return ok?"":"이 날짜 이전 참석 기록이 없어요. 회칙상 벙 개설은 산행 1회 이상 참여 후 가능해요.";
+}
+$("#evBody").addEventListener("click",async e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  if(b.dataset.ver){const id=b.dataset.ver;ev.ver.has(id)?ev.ver.delete(id):ev.ver.add(id);refreshVer();return}
+  if(b.dataset.att){const id=b.dataset.att;if(ev.att.has(id)){ev.att.delete(id);ev.ver.delete(id)}else ev.att.add(id);b.setAttribute("aria-pressed",ev.att.has(id));$("#attCount").textContent=ev.att.size+"명";refreshVer();return}
+  if(b.dataset.goev){openEvent(null,b.dataset.goev);return}
+  switch(b.id){
+    case "evCancel": $("#evDlg").close();break;
+    case "evLink":{
+      const url=location.href.split("#")[0]+"#c="+ev.id;
+      $("#copyTitle").textContent="참석 체크 링크";
+      $("#copyText").value=`[${cfg().clubName} 참석 체크] ${dayLabel(ev.date)} ${ev.place||""}\n아래 링크에서 본인 닉네임을 눌러 주세요.\n${url}`;
+      $("#evDlg").close();$("#copyDlg").showModal();break}
+    case "evNew": syncEvFields(); ev={id:null,date:ev.date,place:"",memo:"",att:new Set()}; renderEvDlg(); break;
+    case "evAddMem":{const inp=$("#evNewMem");const n=inp.value.trim();if(!n)return;syncEvFields();const id=await addMember(n);if(id){ev.att.add(id);renderEvDlg();$("#evNewMem").focus()}break}
+    case "evSave":{
+      syncEvFields();
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(ev.date)){toast("날짜를 확인해 주세요");return}
+      const id=ev.id||uid(); const prev=state.events[id];
+      if(ev.host)ev.att.add(ev.host);
+      writeDoc("events",id,{date:ev.date,place:ev.place,memo:ev.memo,host:ev.host||"",attendees:[...ev.att],verified:[...ev.ver].filter(x=>ev.att.has(x)),createdAt:prev?.createdAt||Date.now()});
+      $("#evDlg").close(); const d=parse(ev.date); view.y=d.getFullYear(); view.m=d.getMonth();
+      renderAll(); toast("산행 기록을 저장했어요"); break}
+    case "evDel":{
+      if(!await ask("이 산행 기록을 삭제할까요? 출석 계산에서도 빠져요.","삭제"))return;
+      removeDoc("events",ev.id); $("#evDlg").close(); renderAll(); toast("삭제했어요"); break}
+    case "evToSettle":{
+      syncEvFields(); const e0=state.events[ev.id]; $("#evDlg").close(); createSettleFromEvent(e0); break}
+  }
+});
+$("#evBody").addEventListener("change",e=>{if(e.target.id==="evHost"||e.target.id==="evDate"){syncEvFields();const w=$("#hostWarn");if(w)w.textContent=hostWarn(ev.host,ev.date,ev.id)}});
+$("#evBody").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="evNewMem"){e.preventDefault();$("#evAddMem").click()}});
+
+/* ---------- members ---------- */
+function norm(s){return String(s||"").replace(/\s+/g,"").toLowerCase()}
+// 카톡 닉네임 형식(83/디디/달서구/남)이면 두 번째 칸을 이름으로, 나머지는 메모로
+function parseNick(raw){
+  const s=String(raw||"").trim();
+  const parts=s.split("/").map(x=>x.trim()).filter(Boolean);
+  if(parts.length>=2&&/^\d{2}$/.test(parts[0]))return {name:parts[1],memo:parts.filter((_,i)=>i!==1).join("/")};
+  return {name:s.replace(/\s+/g," "),memo:""};
+}
+function findDup(name,exceptId){const k=norm(name);return Object.values(state.members).find(m=>m.id!==exceptId&&norm(m.name)===k)}
+async function addMember(raw){
+  if(readOnly){toast("보기 전용이에요");return null}
+  const {name,memo}=parseNick(raw);
+  if(!name){toast("이름을 확인해 주세요");return null}
+  const dup=findDup(name);
+  if(dup){toast(`‘${dup.name}’ 님이 이미 명단에 있어요`);return dup.id}
+  const id=uid(); writeDoc("members",id,{name,since:today(),memo,newbie:true,createdAt:Date.now()}); renderAll(); return id;
+}
+$("#btnAddMember").addEventListener("click",()=>{const i=$("#newMember");const n=i.value.trim();if(!n){i.focus();return}addMember(n);i.value="";i.focus()});
+$("#newMember").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("#btnAddMember").click()}});
+document.querySelectorAll("[data-sort]").forEach(b=>b.addEventListener("click",()=>{sortMode=b.dataset.sort;document.querySelectorAll("[data-sort]").forEach(x=>x.setAttribute("aria-pressed",x===b));renderMembers()}));
+
+let memId=null;
+$("#memberList").addEventListener("click",e=>{const b=e.target.closest("[data-mid]");if(b)openMember(b.dataset.mid)});
+function openMember(id){
+  memId=id; const m=state.members[id]; if(!m)return; const s=statusOf(m);
+  const hist=Object.values(state.events).filter(e=>(e.attendees||[]).includes(id)).sort((a,b)=>b.date.localeCompare(a.date));
+  const hosted=Object.values(state.events).filter(e=>e.host===id).length;
+  const bars=[];const nd=new Date();
+  for(let i=5;i>=0;i--){const d=new Date(nd.getFullYear(),nd.getMonth()-i,1);const pre=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-";bars.push({label:(d.getMonth()+1)+"월",n:hist.filter(e=>e.date.startsWith(pre)&&attended(e,id)).length})}
+  const maxB=Math.max(1,...bars.map(b=>b.n));
+  $("#memBody").innerHTML=`
+    <h2>${esc(m.name)}</h2>
+    <p class="sub">${s.last?`마지막 산행 ${dayLabel(s.last.date)}, ${s.days}일 전`:"아직 산행 기록이 없어요"} · 총 ${s.count}회 출석 인정</p>
+    <label class="f" for="mName">이름</label><input type="text" id="mName" value="${esc(m.name)}">
+    <label class="f" for="mSince">가입일 (기준일) <span style="font-weight:400">산행 기록이 없을 때 이 날부터 계산해요</span></label><input type="date" id="mSince" value="${esc(m.since||today())}">
+    <label class="chk"><input type="checkbox" id="mNew" ${m.newbie?"checked":""}> 신입 회원 (가입 ${cfg().newbieDays}일 안에 첫 산행 필요)</label>
+    <label class="chk"><input type="checkbox" id="mStaff" ${m.staff?"checked":""}> 운영진 (참석 기간 제한 없음)</label>
+    <label class="chk"><input type="checkbox" id="mLeave" ${m.leave?"checked":""}> 휴식 회원 (개인 사정으로 출석 유예, 퇴장 기준 ${cfg().leaveDays}일)</label>
+    <label class="f" for="mMemo">메모</label><textarea id="mMemo" rows="2" placeholder="휴식 사유, 복귀 예정 시기 등">${esc(m.memo||"")}</textarea>
+    <label class="f">최근 6개월 참석 ${hosted?`<span style="font-weight:400">(벙 개설 ${hosted}회)</span>`:""}</label>
+    <div class="bars">${bars.map(b=>`<div class="bar"><span>${b.n}</span><i style="height:${Math.round(b.n/maxB*64)+2}px"></i>${b.label}</div>`).join("")}</div>
+    <label class="f">참석 기록</label>
+    ${hist.length?`<ul class="hist">${hist.map(e=>`<li><span>${e.date}</span>${esc(e.place||"장소 미기재")}${!needsVerify(e)?"":(e.verified||[]).includes(id)?" ✓ 인증":" (인증 대기, 출석 미반영)"}</li>`).join("")}</ul>`:`<p class="sub">기록 없음</p>`}
+    <div class="dlg-foot"><button class="btn danger needs-write" id="mDel">회원 삭제</button><span class="grow"></span><button class="btn" id="mClose">닫기</button><button class="btn primary needs-write" id="mSave">저장</button></div>`;
+  $("#memDlg").showModal();
+}
+$("#memBody").addEventListener("click",async e=>{
+  const b=e.target.closest("button");if(!b)return;
+  const m=state.members[memId];
+  if(b.id==="mClose")$("#memDlg").close();
+  if(b.id==="mSave"){const name=$("#mName").value.trim().replace(/\s+/g," ");if(!name){toast("이름을 입력해 주세요");return}
+    const d=findDup(name,memId);if(d){toast(`‘${d.name}’ 님과 이름이 겹쳐요. 다르게 입력해 주세요`);return}
+    writeDoc("members",memId,Object.assign({},m,{name,since:$("#mSince").value||m.since,memo:$("#mMemo").value.trim(),newbie:$("#mNew").checked,staff:$("#mStaff").checked,leave:$("#mLeave").checked}));$("#memDlg").close();renderAll();toast("저장했어요")}
+  if(b.id==="mDel"){if(!await ask(`${m.name} 님을 명단에서 삭제할까요? 지난 산행 기록의 이름은 '삭제된 회원'으로 보여요.`,"삭제"))return;
+    removeDoc("members",memId);$("#memDlg").close();renderAll();toast("삭제했어요")}
+});
+
+/* ---------- config ---------- */
+$("#btnCfg").addEventListener("click",()=>{
+  const c=cfg();
+  $("#cfgBody").innerHTML=`
+    <h2>기준 설정</h2><p class="sub">마지막 산행일로부터 지난 날짜로 색과 경고를 정해요.</p>
+    <label class="f" for="cName">모임 이름</label><input type="text" id="cName" value="${esc(c.clubName)}">
+    <label class="f" for="cCau">노란색으로 바뀌는 날 (일)</label><input type="number" id="cCau" min="1" value="${c.caution}">
+    <label class="f" for="cWarn">경고 대상이 되는 날 (일)</label><input type="number" id="cWarn" min="1" value="${c.warn}">
+    <label class="f" for="cDan">빨간색으로 바뀌는 날 (일)</label><input type="number" id="cDan" min="1" value="${c.danger}">
+    <label class="f" for="cExit">퇴장 대상이 되는 날 (일)</label><input type="number" id="cExit" min="1" value="${c.exit}">
+    <label class="f" for="cNew">신입 첫 산행 기한 (가입 후 일)</label><input type="number" id="cNew" min="1" value="${c.newbieDays}">
+    <label class="f" for="cLeave">휴식 회원 퇴장 기준 (일)</label><input type="number" id="cLeave" min="1" value="${c.leaveDays}">
+    <label class="f" for="cVer">발사진 인증 적용 시작일 <span style="font-weight:400">이 날 이후 일정은 인증해야 출석 인정</span></label><input type="date" id="cVer" value="${esc(c.verifyFrom||"")}">
+    <div class="dlg-foot"><button class="btn" id="cClose">닫기</button><button class="btn primary needs-write" id="cSave">저장</button></div>`;
+  $("#cfgDlg").showModal();
+});
+$("#cfgBody").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.id==="cClose")$("#cfgDlg").close();
+  if(b.id==="cSave"){
+    const cau=+$("#cCau").value,w=+$("#cWarn").value,d=+$("#cDan").value;
+    if(!(cau>0&&w>0&&d>0)||!(cau<=w&&w<=d)){toast("노란색 ≤ 경고 ≤ 빨간색 순서로 입력해 주세요");return}
+    const ex=+$("#cExit").value,nb=+$("#cNew").value,lv=+$("#cLeave").value;
+    if(!(ex>0&&nb>0)){toast("퇴장 기준과 신입 기한을 확인해 주세요");return}
+    const next=Object.assign({},cfg(),{clubName:$("#cName").value.trim()||DEF.clubName,caution:cau,warn:w,danger:d,exit:ex,newbieDays:nb,leaveDays:lv>0?lv:90,verifyFrom:$("#cVer").value||""});delete next.id;
+    writeDoc("config","main",next);
+    $("#cfgDlg").close();renderAll();toast("기준을 바꿨어요");
+  }
+});
+
+/* ---------- calendar nav ---------- */
+$("#calGrid").addEventListener("click",e=>{const b=e.target.closest("[data-date]");if(b)openEvent(b.dataset.date)});
+$("#prevM").addEventListener("click",()=>{view.m--;if(view.m<0){view.m=11;view.y--}renderCalendar();renderMembers()});
+$("#nextM").addEventListener("click",()=>{view.m++;if(view.m>11){view.m=0;view.y++}renderCalendar();renderMembers()});
+$("#todayM").addEventListener("click",()=>{const d=new Date();view.y=d.getFullYear();view.m=d.getMonth();renderCalendar();renderMembers()});
+$("#btnNewEvent").addEventListener("click",()=>{ev={id:null,date:today(),place:"",memo:"",att:new Set()};renderEvDlg();$("#evDlg").showModal()});
+
+/* ---------- tabs ---------- */
+function setTab(t){
+  ["att","pay","rank"].forEach(k=>{$("#t-"+k).setAttribute("aria-selected",t===k);$("#tab-"+k).hidden=t!==k});
+  if(t==="pay"){renderSettleList();renderSettleEditor()}
+  if(t==="rank")renderRank();
+}
+$("#t-rank").addEventListener("click",()=>setTab("rank"));
+/* ---------- ranking ---------- */
+let rankOff=0;
+document.querySelectorAll("[data-rk]").forEach(b=>b.addEventListener("click",()=>{rankOff=+b.dataset.rk;document.querySelectorAll("[data-rk]").forEach(x=>x.setAttribute("aria-pressed",x===b));renderRank()}));
+function renderRank(){
+  const nd=new Date(), d=new Date(nd.getFullYear(),nd.getMonth()-rankOff,1);
+  const y=d.getFullYear(), m=d.getMonth(), pre=y+"-"+pad(m+1)+"-", t=today();
+  const evs=Object.values(state.events).filter(e=>e.date.startsWith(pre)&&e.date<=t);
+  const per={}, host={};
+  evs.forEach(e=>{attendedIds(e).forEach(id=>{if(state.members[id])per[id]=(per[id]||0)+1});if(e.host&&state.members[e.host])host[e.host]=(host[e.host]||0)+1});
+  const members=Object.values(state.members);
+  const ranked=members.filter(x=>per[x.id]).sort((a,b)=>per[b.id]-per[a.id]||(host[b.id]||0)-(host[a.id]||0)||a.name.localeCompare(b.name,"ko"));
+  const zero=members.filter(x=>!per[x.id]).sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+  const total=Object.values(per).reduce((a,b)=>a+b,0), n=evs.length, rate=members.length?Math.round(ranked.length/members.length*100):0;
+  $("#rankTitle").textContent=`${m+1}월 참석 순위`;
+  $("#rankSum").innerHTML=`<span><b>${n}회</b>일정</span><span><b>${total}명</b>참석 연인원</span><span><b>${ranked.length}/${members.length}명</b>한 번 이상 참여</span><span><b>${rate}%</b>참여율</span><span><b>${n?(total/n).toFixed(1):0}명</b>일정당 평균</span>`;
+  if(!ranked.length){$("#rankList").innerHTML=`<li class="empty">${m+1}월에는 아직 참석 기록이 없어요.</li>`;$("#rankZero").innerHTML="";return}
+  const max=per[ranked[0].id];let rank=0,prev=null;
+  $("#rankList").innerHTML=ranked.map((x,i)=>{
+    const c=per[x.id];if(c!==prev){rank=i+1;prev=c}
+    const r=n?Math.round(c/n*100):0;
+    return `<li class="rk${rank<=3?" top":""}"><span class="no">${rank}</span><span class="nm">${esc(x.name)}<small>${host[x.id]?`벙 개설 ${host[x.id]}회`:""}</small></span><span class="track"><i style="width:${Math.round(c/max*100)}%"></i></span><span class="val"><b>${c}회</b><span>일정의 ${r}%</span></span></li>`;
+  }).join("");
+  $("#rankZero").innerHTML=zero.length?`<b>${m+1}월 참석 0회 (${zero.length}명)</b><br>${zero.map(x=>esc(x.name)).join(", ")}`:"";
+}
+$("#t-att").addEventListener("click",()=>setTab("att"));
+$("#t-pay").addEventListener("click",()=>setTab("pay"));
+
+/* ---------- settlement ---------- */
+function roundU(v,unit){return unit?Math.ceil(v/unit-1e-9)*unit:Math.round(v)}
+// 카풀(회칙): 동승자(운전자 제외) 3명 이하면 운전자 포함 1/N, 4명 이상이면 운전자 빼고 동승자끼리 1/N
+function carCalc(car,unit){
+  const c=cfg(); const eff=+car.eff||+c.eff; const price=+c.fuelPrice||0;
+  const manual=+car.manual||0;
+  const fuel=manual>0?manual:(eff>0?(+car.km||0)/eff*price:0);
+  const cost=fuel+(+car.toll||0);
+  const riders=(car.riders||[]).filter(id=>id&&id!==car.driver);
+  const n=riders.length+(car.driver?1:0);
+  const inc=riders.length<=3;
+  const payers=inc?n:riders.length;
+  const share=payers?roundU(cost/payers,unit):0;
+  return {eff,fuel,cost,riders,n,inc,payers,share,manual:manual>0};
+}
+function carText(cc){
+  if(!cc.n)return "운전자와 동승자를 선택해 주세요.";
+  const base=cc.manual?`유류비 ${won(cc.fuel)}원(직접 입력)`:`유류비 ${won(cc.fuel)}원(연비 ${cc.eff}km/L)`;
+  return `${base}, 합계 ${won(cc.cost)}원. 동승자 ${cc.riders.length}명이라 ${cc.inc?"운전자 포함":"운전자 빼고"} ${cc.payers}명이 1인 ${won(cc.share)}원`;
+}
+function calc(s){
+  const rounds=s.rounds||[], people=s.people||[];
+  const n=rounds.map((_,i)=>people.filter(p=>p.r&&p.r[i]).length);
+  const per=rounds.map((r,i)=>n[i]?(+r.amount||0)/n[i]:0);
+  const unit=+s.roundUnit||0;
+  const ptm=people.map(p=>{let t=0;rounds.forEach((r,i)=>{if(p.r&&p.r[i])t+=per[i]});return roundU(t,unit)});
+  const cars=(s.cars||[]).map(car=>carCalc(car,unit));
+  const cp=people.map(p=>cars.reduce((a,cc)=>a+(cc.riders.includes(p.id)?cc.share:0),0));
+  const pt=ptm.map((v,i)=>v+cp[i]);
+  const total=rounds.reduce((a,r)=>a+(+r.amount||0),0);
+  const carTotal=cars.reduce((a,cc)=>a+cc.cost,0);
+  const collectedMeal=ptm.reduce((a,b)=>a+b,0);
+  const collected=pt.reduce((a,b)=>a+b,0);
+  const paid=people.reduce((a,p,i)=>a+(p.paid?pt[i]:0),0);
+  return {n,per,ptm,cp,pt,total,carTotal,cars,collectedMeal,collected,paid};
+}
+function settleState(s){const ppl=s.people||[];if(!ppl.length)return "none";return ppl.every(p=>p.paid)?"done":"todo"}
+function hostOf(s){return s.host||((state.events[s.eventId]||{}).host)||""}
+function settleStatusText(s){
+  const h=hostOf(s), un=(s.people||[]).filter(p=>!p.paid).map(p=>memberName(p.id));
+  const hs=h?`벙주 ${memberName(h)} 님`:"벙주 미지정";
+  if(!(s.people||[]).length)return `${hs}. 참석자를 추가하면 입금 상태를 확인할 수 있어요.`;
+  return un.length?`${hs}, 정산 미완료. 미입금 ${un.length}명: ${un.join(", ")}`:`${hs}, 모두 입금해서 정산이 끝났어요.`;
+}
+function renderSettleList(){
+  const ul=$("#settleList");
+  const todo=Object.values(state.settles).filter(x=>settleState(x)==="todo").length;
+  $("#t-pay").textContent=todo?`정산 (미완료 ${todo})`:"정산";
+  const list=Object.values(state.settles).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0));
+  if(!list.length){ul.innerHTML=`<li class="empty">산행 기록에서 ‘이 산행 정산하기’를 누르거나 새 정산을 만들어 보세요.</li>`;return}
+  ul.innerHTML=list.map(s=>{const c=calc(s);const pc=(s.people||[]).filter(p=>p.paid).length;
+    return `<li><button class="sitem" data-sid="${esc(s.id)}" aria-current="${s.id===selSettle}"><span class="t">${esc(s.title||"제목 없음")}${settleState(s)==="todo"?'<span class="sbadge todo">미완료</span>':settleState(s)==="done"?'<span class="sbadge done">완료</span>':''}</span><span class="m">${s.date?md(s.date):""} · ${won(c.total)}원 · 입금 ${pc}/${(s.people||[]).length}</span></button></li>`}).join("");
+}
+$("#settleList").addEventListener("click",e=>{const b=e.target.closest("[data-sid]");if(!b)return;flushSave();selSettle=b.dataset.sid;loadDraft();renderSettleList();renderSettleEditor()});
+function loadDraft(){const s=state.settles[selSettle];draft=s?JSON.parse(JSON.stringify(s)):null;dirty=false}
+function newSettle(init){
+  if(readOnly){toast("보기 전용이에요");return}
+  flushSave();
+  const id=uid();
+  const s=Object.assign({title:"",date:today(),eventId:"",rounds:[{place:"",amount:0}],people:[],roundUnit:100,createdAt:Date.now()},init||{});
+  writeDoc("settles",id,s); selSettle=id; loadDraft(); setTab("pay");
+}
+function createSettleFromEvent(e){
+  if(!e)return;
+  const existing=Object.values(state.settles).find(s=>s.eventId===e.id);
+  if(existing){selSettle=existing.id;loadDraft();setTab("pay");toast("이 산행의 정산을 열었어요");return}
+  newSettle({title:e.place||"산행 정산",date:e.date,eventId:e.id,host:e.host||"",people:(e.attendees||[]).map(id=>({id,r:[true],paid:false}))});
+}
+$("#btnNewSettle").addEventListener("click",()=>newSettle());
+
+function preCount(s){const p=s.pre||{};return p.count!=null&&p.count!==""?(+p.count||0):(s.people||[]).length}
+function distribute(count,k){if(!k)return [];const b=Math.floor(count/k),x=count%k;return Array.from({length:k},(_,i)=>b+(i<x?1:0))}
+function preCars(s){const p=s.pre||{},count=preCount(s),cap=+p.cap||5;const k=p.carCount?+p.carCount:(count?Math.ceil(count/cap):0);if(p.cars&&p.cars.length===k)return p.cars.map(c=>+c.n||0);return distribute(count,k)}
+// 출발 전 차비: 차량 1대 비용 = 왕복거리/연비*유가 + 통행료, 차량별로 회칙(동승자 3명 이하 운전자 포함) 적용
+function preCalc(s){
+  const cf=cfg(),p=s.pre||{},unit=+s.roundUnit||0;
+  const km=+p.km||0,toll=+p.toll||0;
+  const fuel=cf.eff>0?km/cf.eff*cf.fuelPrice:0,carCost=fuel+toll;
+  const cars=preCars(s).map(n=>{const riders=Math.max(0,n-1),inc=riders<=3,payers=n?(inc?n:riders):0,cost=n?carCost:0;return {n,riders,inc,payers,cost,share:payers?roundU(cost/payers,unit):0}});
+  const totalCost=cars.reduce((a,c)=>a+c.cost,0),totalPayers=cars.reduce((a,c)=>a+c.payers,0);
+  return {count:preCount(s),cap:+p.cap||5,km,toll,fuel,carCost,cars,totalCost,totalPayers,
+    exempt:cars.filter(c=>c.n&&!c.inc).length,uniform:totalPayers?roundU(totalCost/totalPayers,unit):0,assigned:cars.reduce((a,c)=>a+c.n,0)};
+}
+function preRule(c){return c.n?(c.inc?`운전자 포함 ${c.payers}명`:`운전자 빼고 ${c.payers}명`):"-"}
+function preText(pc){
+  if(!pc.count||!pc.km)return "참석 인원과 왕복 거리를 넣으면 차비가 계산돼요.";
+  return `차량 1대 비용 ${won(pc.carCost)}원 (유류비 ${won(pc.fuel)}원 + 통행료 ${won(pc.toll)}원), 총 ${won(pc.totalCost)}원. 모두 같은 금액으로 걷으면 1인 ${won(pc.uniform)}원${pc.exempt?`, 운전자 ${pc.exempt}명 면제`:""}`;
+}
+function preWarn(pc){return pc.count&&pc.assigned!==pc.count?`차량 인원 합계 ${pc.assigned}명이 참석 인원 ${pc.count}명과 달라요.`:""}
+function preHtml(s,dis){
+  const p=s.pre||{},pc=preCalc(s);
+  return `<div class="pre">
+    <h4>출발 전 차비 미리 계산</h4>
+    <div class="car-grid">
+      <label>참석 인원 (명)<input type="text" inputmode="numeric" data-f="pcount" value="${pc.count||""}" placeholder="0" ${dis}></label>
+      <label>왕복 거리 (km)<input type="text" inputmode="decimal" data-f="pkm" value="${p.km||""}" placeholder="0" ${dis}></label>
+      <label>통행료 왕복, 1대 (원)<input type="text" inputmode="numeric" data-f="ptoll" value="${p.toll?won(p.toll):""}" placeholder="0" ${dis}></label>
+      <label>차량당 인원<input type="text" inputmode="numeric" data-f="pcap" value="${p.cap||""}" placeholder="5" ${dis}></label>
+    </div>
+    ${pc.cars.length?`<div class="pre-head"><b>차량 ${pc.cars.length}대</b>
+      <button class="btn small needs-write" data-act="pcarminus" aria-label="차량 줄이기">−</button>
+      <button class="btn small needs-write" data-act="pcarplus" aria-label="차량 늘리기">+</button>
+      ${p.carCount||(p.cars&&p.cars.length)?`<button class="btn small needs-write" data-act="pauto">자동 배분</button>`:""}</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>차량</th><th class="num">인원 (운전자 포함)</th><th class="num">차량 비용</th><th>나누는 사람</th><th class="num">1인 금액</th></tr></thead>
+      <tbody>${pc.cars.map((c,i)=>`<tr><td><b>${i+1}호차</b></td>
+        <td class="num"><input type="text" inputmode="numeric" class="mini" data-f="pn" data-i="${i}" value="${c.n}" aria-label="${i+1}호차 인원" ${dis}></td>
+        <td class="num" data-out="pc${i}c">${won(c.cost)}</td><td data-out="pc${i}p">${preRule(c)}</td>
+        <td class="num" data-out="pc${i}s"><b>${won(c.share)}</b></td></tr>`).join("")}</tbody>
+    </table></div>`:""}
+    <p class="car-out" data-out="pre">${preText(pc)}</p>
+    <p class="sub" data-out="prewarn" style="color:var(--bad);margin:4px 0 0">${preWarn(pc)}</p>
+    <div class="addp"><button class="btn small" data-act="precopy">차비 공지 정리하기</button><button class="btn small needs-write" data-act="premake">이대로 실제 차량 만들기</button></div>
+  </div>`;
+}
+function preCopy(){
+  const s=draft,pc=preCalc(s),cf=cfg();
+  let t=`[${cf.clubName} 차비 안내] ${s.date?md(s.date)+" ":""}${s.title||""}\n\n`;
+  t+=`왕복 ${pc.km}km, 통행료 ${won(pc.toll)}원 (차량 1대)\n유가 ${won(cf.fuelPrice)}원/L, 연비 ${cf.eff}km/L 기준\n`;
+  t+=`참석 ${pc.count}명, 차량 ${pc.cars.length}대 (${pc.cars.map(c=>c.n+"명").join(", ")})\n\n1인 차비 ${won(pc.uniform)}원`;
+  if(pc.exempt)t+=`\n(동승자 4명 이상인 차량의 운전자 ${pc.exempt}명은 제외)`;
+  $("#copyTitle").textContent="차비 안내";$("#copyText").value=t;$("#copyDlg").showModal();
+}
+function carpoolHtml(s,c,dis){
+  const cf=cfg(), ppl=s.people||[], cars=s.cars||[];
+  const nm=id=>esc(memberName(id));
+  return `<div class="sec">
+    <div class="sec-head"><h3>카풀과 차비</h3>${ppl.length?`<button class="btn small needs-write" data-act="cadd">차량 추가</button>`:""}</div>
+    <div class="fuelbar">
+      <label>유가 <input type="text" inputmode="numeric" class="mini" data-f="fuelPrice" value="${won(cf.fuelPrice)}" aria-label="리터당 유가" ${dis}> 원/L</label>
+      <label>기본 연비 <input type="text" inputmode="decimal" class="mini" data-f="defEff" value="${cf.eff}" aria-label="기본 연비" ${dis}> km/L</label>
+      <span class="sub">유가 기준일 ${esc(cf.fuelDate)}</span>
+      <a href="https://www.opinet.co.kr/" target="_blank" rel="noopener">오피넷 유가 보기 ↗</a>
+      <a href="https://map.naver.com/" target="_blank" rel="noopener">네이버 지도 거리 재기 ↗</a>
+    </div>
+    <p class="sub">동승자(운전자 제외) 3명 이하는 운전자도 같이 1/N, 4명 이상은 운전자 빼고 동승자끼리 1/N이에요. 거리는 왕복으로 넣어 주세요.</p>
+    ${preHtml(s,dis)}
+    <h4 class="sub-h">실제 차량별 정산</h4>
+    ${!ppl.length?`<p class="empty" style="padding:10px 0">아래에서 참석자를 먼저 추가하면 차량을 배정할 수 있어요.</p>`:""}
+    ${cars.map((car,ci)=>{const cc=c.cars[ci];return `<div class="car">
+      <div class="car-top"><b>${ci+1}호차</b>
+        <select data-f="cdriver" data-c="${ci}" aria-label="${ci+1}호차 운전자" ${dis}><option value="">운전자 선택</option>${ppl.map(p=>`<option value="${esc(p.id)}" ${p.id===car.driver?"selected":""}>${nm(p.id)}</option>`).join("")}</select>
+        <span class="grow"></span><button class="xbtn needs-write" data-act="cdel" data-c="${ci}" aria-label="${ci+1}호차 삭제">×</button></div>
+      <div class="chips">${ppl.filter(p=>p.id!==car.driver).map(p=>`<button class="chip" data-act="crider" data-c="${ci}" data-id="${esc(p.id)}" aria-pressed="${(car.riders||[]).includes(p.id)}" ${dis}>${nm(p.id)}</button>`).join("")}</div>
+      <div class="car-grid">
+        <label>왕복 거리 (km)<input type="text" inputmode="decimal" data-f="ckm" data-c="${ci}" value="${car.km||""}" placeholder="0" ${dis}></label>
+        <label>통행료 (원)<input type="text" inputmode="numeric" data-f="ctoll" data-c="${ci}" value="${car.toll?won(car.toll):""}" placeholder="0" ${dis}></label>
+        <label>연비 (km/L)<input type="text" inputmode="decimal" data-f="ceff" data-c="${ci}" value="${car.eff||""}" placeholder="기본 ${cf.eff}" ${dis}></label>
+        <label>유류비 직접 입력<input type="text" inputmode="numeric" data-f="cmanual" data-c="${ci}" value="${car.manual?won(car.manual):""}" placeholder="비우면 자동 계산" ${dis}></label>
+      </div>
+      <p class="car-out" data-out="car${ci}">${carText(cc)}</p>
+    </div>`}).join("")}
+  </div>`;
+}
+function renderSettleEditor(){
+  const box=$("#settleEditor");
+  if(!draft||!state.settles[selSettle]){box.innerHTML=`<p class="empty">왼쪽에서 정산을 고르거나 새로 만들어 주세요.</p>`;return}
+  const s=draft, c=calc(s);
+  const evOpts=Object.values(state.events).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,60)
+    .map(e=>`<option value="${esc(e.id)}" ${e.id===s.eventId?"selected":""}>${md(e.date)} ${esc(e.place||"산행")} (${(e.attendees||[]).length}명)</option>`).join("");
+  const inIds=new Set(s.people.map(p=>p.id));
+  const addOpts=sortedByName().filter(m=>!inIds.has(m.id)).map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join("");
+  const dis=readOnly?"disabled":"";
+  box.innerHTML=`
+    <div class="row2">
+      <div><label class="f" for="sTitle" style="margin-top:0">정산 제목</label><input type="text" id="sTitle" data-f="title" value="${esc(s.title)}" placeholder="예: 10월 팔공산 정기산행" ${dis}></div>
+      <div><label class="f" for="sDate" style="margin-top:0">날짜</label><input type="date" id="sDate" data-f="date" value="${esc(s.date)}" ${dis}></div>
+    </div>
+    <div class="row2">
+      <div><label class="f" for="sEv">연결된 산행</label><select id="sEv" data-f="eventId" ${dis}><option value="">연결 안 함</option>${evOpts}</select></div>
+      <div><label class="f" for="sUnit">1인 금액 올림</label><select id="sUnit" data-f="roundUnit" ${dis}>
+        ${[[0,"올림 안 함"],[10,"10원 단위"],[100,"100원 단위"],[500,"500원 단위"],[1000,"1,000원 단위"]].map(([v,l])=>`<option value="${v}" ${+s.roundUnit===v?"selected":""}>${l}</option>`).join("")}</select></div>
+    </div>
+    <div class="row2">
+      <div><label class="f" for="sHost">벙주 (정산 마무리 담당)</label><select id="sHost" data-f="host" ${dis}><option value="">선택 안 함</option>${sortedByName().map(m=>`<option value="${esc(m.id)}" ${m.id===hostOf(s)?"selected":""}>${esc(m.name)}</option>`).join("")}</select></div>
+      <div></div>
+    </div>
+    <p class="sub" data-out="sstat" style="margin-top:8px">${esc(settleStatusText(s))}</p>
+
+    <div class="sec">
+      <div class="sec-head"><h3>차수별 금액</h3><button class="btn small needs-write" data-act="radd">차수 추가</button></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>차수</th><th>장소</th><th class="num">금액 (원)</th><th class="num">인원</th><th class="num">1인당</th><th></th></tr></thead>
+        <tbody>${s.rounds.map((r,i)=>`<tr>
+          <td><b>${i+1}차</b></td>
+          <td><input type="text" data-f="rplace" data-i="${i}" value="${esc(r.place)}" placeholder="식당, 카페 등" ${dis}></td>
+          <td><input type="text" class="amt" inputmode="numeric" data-f="ramount" data-i="${i}" value="${r.amount?won(r.amount):""}" placeholder="0" ${dis}></td>
+          <td class="num" data-out="n${i}">${c.n[i]}명</td>
+          <td class="num" data-out="per${i}">${won(c.per[i])}</td>
+          <td>${s.rounds.length>1?`<button class="xbtn needs-write" data-act="rdel" data-i="${i}" aria-label="${i+1}차 삭제">×</button>`:""}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><h3>참석자별 차수 체크</h3>${s.eventId&&state.events[s.eventId]?`<button class="btn small needs-write" data-act="pload">산행 참석자 불러오기</button>`:""}</div>
+      ${s.people.length?`<div class="tbl-wrap"><table>
+        <thead><tr><th>이름</th>${s.rounds.map((_,i)=>`<th class="c">${i+1}차</th>`).join("")}<th class="num">식비 등</th><th class="num">카풀</th><th class="num">낼 금액</th><th class="c">입금</th><th></th></tr></thead>
+        <tbody>${s.people.map((p,pi)=>`<tr class="${p.paid?"paidrow":""}" data-row="${pi}">
+          <td><b>${esc(memberName(p.id))}</b></td>
+          ${s.rounds.map((_,i)=>`<td class="c"><input type="checkbox" data-f="pr" data-p="${pi}" data-i="${i}" ${p.r&&p.r[i]?"checked":""} aria-label="${esc(memberName(p.id))} ${i+1}차" ${dis}></td>`).join("")}
+          <td class="num" data-out="ptm${pi}">${won(c.ptm[pi])}</td>
+          <td class="num" data-out="cp${pi}">${c.cp[pi]?won(c.cp[pi]):"-"}</td>
+          <td class="num" data-out="pt${pi}"><b>${won(c.pt[pi])}</b></td>
+          <td class="c"><input type="checkbox" data-f="paid" data-p="${pi}" ${p.paid?"checked":""} aria-label="${esc(memberName(p.id))} 입금 확인" ${dis}></td>
+          <td><button class="xbtn needs-write" data-act="pdel" data-p="${pi}" aria-label="${esc(memberName(p.id))} 빼기">×</button></td>
+        </tr>`).join("")}</tbody>
+      </table></div>`:`<p class="empty" style="padding:10px 0">아직 참석자가 없어요. 아래에서 추가해 주세요.</p>`}
+      <div class="addp needs-write">
+        <select id="paddSel">${addOpts?`<option value="">회원 선택</option>${addOpts}`:`<option value="">추가할 회원이 없어요</option>`}</select>
+        <button class="btn small" data-act="padd">참석자 추가</button>
+      </div>
+    </div>
+
+    ${carpoolHtml(s,c,dis)}
+
+    <div class="totals">
+      <div class="tot"><span>식비 등 사용 금액</span><b data-out="total">${won(c.total)}원</b></div>
+      <div class="tot"><span>카풀 비용</span><b data-out="carTotal">${won(c.carTotal)}원</b></div>
+      <div class="tot"><span>걷을 금액 합계</span><b data-out="collected">${won(c.collected)}원</b></div>
+      <div class="tot"><span>입금 완료</span><b data-out="paid">${won(c.paid)}원</b></div>
+    </div>
+    <p class="sub" data-out="diff" style="margin-top:8px">${diffText(c)}</p>
+
+    <div class="foot">
+      <button class="btn danger needs-write" data-act="sdel">정산 삭제</button>
+      <button class="btn primary" data-act="copy">정산 내역 정리하기</button>
+    </div>`;
+}
+function diffText(c){
+  const d=c.collectedMeal-c.total;
+  if(!c.total)return "금액을 입력하면 참석자별 금액이 계산돼요.";
+  const missing=c.n.some((n,i)=>!n&&(+draft.rounds[i].amount||0)>0);
+  if(missing)return "체크된 사람이 없는 차수가 있어요. 그 금액은 아무에게도 나뉘지 않았어요.";
+  return d>0?`올림으로 ${won(d)}원이 남아요 (회비로 적립하거나 총무 몫).`:d<0?`${won(-d)}원이 부족해요.`:"총액과 걷을 금액이 딱 맞아요.";
+}
+function updateComputed(){
+  const box=$("#settleEditor"), c=calc(draft);
+  c.n.forEach((n,i)=>{const a=box.querySelector(`[data-out="n${i}"]`);if(a)a.textContent=n+"명";const b=box.querySelector(`[data-out="per${i}"]`);if(b)b.textContent=won(c.per[i])});
+  c.pt.forEach((v,i)=>{const a=box.querySelector(`[data-out="pt${i}"]`);if(a)a.innerHTML="<b>"+won(v)+"</b>"});
+  c.ptm.forEach((v,i)=>{const a=box.querySelector(`[data-out="ptm${i}"]`);if(a)a.textContent=won(v)});
+  c.cp.forEach((v,i)=>{const a=box.querySelector(`[data-out="cp${i}"]`);if(a)a.textContent=v?won(v):"-"});
+  c.cars.forEach((cc,i)=>{const a=box.querySelector(`[data-out="car${i}"]`);if(a)a.textContent=carText(cc)});
+  const pc=preCalc(draft);
+  pc.cars.forEach((cc,i)=>{const a=box.querySelector(`[data-out="pc${i}c"]`);if(a)a.textContent=won(cc.cost);const b=box.querySelector(`[data-out="pc${i}p"]`);if(b)b.textContent=preRule(cc);const d=box.querySelector(`[data-out="pc${i}s"]`);if(d)d.innerHTML="<b>"+won(cc.share)+"</b>"});
+  const pa=box.querySelector('[data-out="pre"]');if(pa)pa.textContent=preText(pc);
+  const pw=box.querySelector('[data-out="prewarn"]');if(pw)pw.textContent=preWarn(pc);
+  [["total",c.total],["carTotal",c.carTotal],["collected",c.collected],["paid",c.paid]].forEach(([k,v])=>{const a=box.querySelector(`[data-out="${k}"]`);if(a)a.textContent=won(v)+"원"});
+  const ss=box.querySelector('[data-out="sstat"]');if(ss)ss.textContent=settleStatusText(draft);
+  const d=box.querySelector('[data-out="diff"]');if(d)d.textContent=diffText(c);
+}
+function scheduleSave(){
+  dirty=true; state.settles[selSettle]=Object.assign({},draft,{id:selSettle}); renderSettleList();
+  clearTimeout(saveTimer); saveTimer=setTimeout(flushSave,700);
+}
+function flushSave(){
+  clearTimeout(saveTimer); saveTimer=null;
+  if(!dirty||!draft||!selSettle)return;
+  const id=selSettle, body=JSON.parse(JSON.stringify(draft)); delete body.id;
+  dirty=false; writeDoc("settles",id,body);
+}
+const ed=$("#settleEditor");
+ed.addEventListener("input",e=>{
+  const t=e.target,f=t.dataset.f; if(!f||!draft||readOnly)return;
+  if(f==="title"){draft.title=t.value}
+  else if(f==="rplace"){draft.rounds[+t.dataset.i].place=t.value}
+  else if(f==="ramount"){const v=+(t.value.replace(/[^\d]/g,""))||0;draft.rounds[+t.dataset.i].amount=v;t.value=v?won(v):""}
+  else if(f==="ckm"||f==="ceff"){const car=draft.cars[+t.dataset.c];const v=parseFloat(t.value.replace(/[^\d.]/g,""));car[f==="ckm"?"km":"eff"]=isFinite(v)?v:0}
+  else if(f==="ctoll"||f==="cmanual"){const car=draft.cars[+t.dataset.c];const v=+(t.value.replace(/[^\d]/g,""))||0;car[f==="ctoll"?"toll":"manual"]=v;t.value=v?won(v):""}
+  else if(f==="pkm"){const pre=draft.pre||(draft.pre={});const v=parseFloat(t.value.replace(/[^\d.]/g,""));pre.km=isFinite(v)?v:0}
+  else if(f==="ptoll"){const pre=draft.pre||(draft.pre={});const v=+(t.value.replace(/[^\d]/g,""))||0;pre.toll=v;t.value=v?won(v):""}
+  else if(f==="pn"){const pre=draft.pre||(draft.pre={});const ns=preCars(draft);ns[+t.dataset.i]=+(t.value.replace(/[^\d]/g,""))||0;pre.cars=ns.map(n=>({n}))}
+  else return;
+  updateComputed(); scheduleSave();
+});
+ed.addEventListener("change",e=>{
+  const t=e.target,f=t.dataset.f; if(!f||!draft||readOnly)return;
+  if(f==="date"){draft.date=t.value}
+  else if(f==="eventId"){draft.eventId=t.value;scheduleSave();renderSettleEditor();return}
+  else if(f==="fuelPrice"||f==="defEff"){
+    const v=parseFloat(t.value.replace(/[^\d.]/g,""));
+    if(!(v>0)){toast("숫자를 확인해 주세요");renderSettleEditor();return}
+    const next=Object.assign({},cfg(),f==="fuelPrice"?{fuelPrice:Math.round(v),fuelDate:today()}:{eff:v});delete next.id;
+    writeDoc("config","main",next);renderSettleEditor();renderSettleList();toast(f==="fuelPrice"?"유가를 바꿨어요":"기본 연비를 바꿨어요");return}
+  else if(f==="pcount"||f==="pcap"){const pre=draft.pre||(draft.pre={});const v=+(t.value.replace(/[^\d]/g,""))||0;if(f==="pcount")pre.count=v;else pre.cap=v||5;delete pre.carCount;delete pre.cars;scheduleSave();renderSettleEditor();return}
+  else if(f==="cdriver"){const car=draft.cars[+t.dataset.c];car.driver=t.value;car.riders=(car.riders||[]).filter(x=>x!==t.value);scheduleSave();renderSettleEditor();return}
+  else if(f==="roundUnit"){draft.roundUnit=+t.value}
+  else if(f==="host"){draft.host=t.value}
+  else if(f==="pr"){const p=draft.people[+t.dataset.p];p.r=p.r||[];p.r[+t.dataset.i]=t.checked}
+  else if(f==="paid"){draft.people[+t.dataset.p].paid=t.checked;t.closest("tr").classList.toggle("paidrow",t.checked)}
+  else return;
+  updateComputed(); scheduleSave();
+});
+ed.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-act]"); if(!b||!draft)return;
+  const a=b.dataset.act;
+  if(a==="copy"){openCopy();return}
+  if(a==="precopy"){preCopy();return}
+  if(readOnly){toast("보기 전용이에요");return}
+  if(a==="pcarplus"||a==="pcarminus"){const pre=draft.pre||(draft.pre={});const k=preCars(draft).length;pre.carCount=a==="pcarplus"?k+1:Math.max(1,k-1);delete pre.cars}
+  else if(a==="pauto"){const pre=draft.pre||(draft.pre={});delete pre.carCount;delete pre.cars}
+  else if(a==="premake"){const pc=preCalc(draft);if(!pc.cars.length||!pc.km){toast("참석 인원과 왕복 거리를 먼저 넣어 주세요");return}
+    draft.cars=draft.cars||[];if(draft.cars.length&&!await ask(`이미 차량이 ${draft.cars.length}대 있어요. ${pc.cars.length}대를 더 만들까요?`,"만들기"))return;
+    pc.cars.forEach(()=>draft.cars.push({driver:"",riders:[],km:pc.km,toll:pc.toll,eff:0,manual:0}));toast("차량을 만들었어요. 운전자와 동승자를 골라 주세요")}
+  else if(a==="cadd"){draft.cars=draft.cars||[];draft.cars.push({driver:"",riders:[],km:0,toll:0,eff:0,manual:0})}
+  else if(a==="cdel"){const i=+b.dataset.c;const car=draft.cars[i];if((car.km||car.manual||car.driver)&&!await ask(`${i+1}호차를 삭제할까요?`,"삭제"))return;draft.cars.splice(i,1)}
+  else if(a==="crider"){const car=draft.cars[+b.dataset.c];const id=b.dataset.id;car.riders=car.riders||[];const k=car.riders.indexOf(id);k>=0?car.riders.splice(k,1):car.riders.push(id)}
+  else if(a==="radd"){draft.rounds.push({place:"",amount:0});draft.people.forEach(p=>{p.r=p.r||[];p.r[draft.rounds.length-1]=false})}
+  else if(a==="rdel"){const i=+b.dataset.i;const r=draft.rounds[i];if((+r.amount||r.place)&&!await ask(`${i+1}차를 삭제할까요?`,"삭제"))return;draft.rounds.splice(i,1);draft.people.forEach(p=>{if(p.r)p.r.splice(i,1)})}
+  else if(a==="padd"){const id=$("#paddSel").value;if(!id){toast("추가할 회원을 골라 주세요");return}draft.people.push({id,r:draft.rounds.map((_,i)=>i===0),paid:false})}
+  else if(a==="pdel"){const rm=draft.people[+b.dataset.p];draft.people.splice(+b.dataset.p,1);(draft.cars||[]).forEach(car=>{if(car.driver===rm.id)car.driver="";car.riders=(car.riders||[]).filter(x=>x!==rm.id)})}
+  else if(a==="pload"){const e0=state.events[draft.eventId];if(!e0)return;const have=new Set(draft.people.map(p=>p.id));let added=0;
+    (e0.attendees||[]).forEach(id=>{if(!have.has(id)){draft.people.push({id,r:draft.rounds.map((_,i)=>i===0),paid:false});added++}});
+    toast(added?`${added}명을 불러왔어요`:"이미 모두 들어 있어요")}
+  else if(a==="sdel"){if(!await ask("이 정산을 삭제할까요?","삭제"))return;clearTimeout(saveTimer);dirty=false;removeDoc("settles",selSettle);selSettle=null;draft=null;renderSettleList();renderSettleEditor();toast("삭제했어요");return}
+  scheduleSave(); renderSettleEditor();
+});
+function openCopy(){
+  const s=draft,c=calc(s);
+  let t=`[${cfg().clubName} 정산] ${s.date?md(s.date)+" ":""}${s.title||""}\n\n`;
+  s.rounds.forEach((r,i)=>{t+=`${i+1}차${r.place?" "+r.place:""}: ${won(r.amount)}원 (${c.n[i]}명, 1인 ${won(c.per[i])}원)\n`});
+  t+=`총 ${won(c.total)}원\n`;
+  (s.cars||[]).forEach((car,i)=>{const cc=c.cars[i];if(!cc.n)return;t+=`\n${i+1}호차 (운전 ${car.driver?memberName(car.driver):"미정"}, 왕복 ${car.km||0}km)\n${carText(cc)}\n`});
+  t+=`\n`;
+  s.people.forEach((p,i)=>{const rs=s.rounds.map((_,k)=>p.r&&p.r[k]?(k+1)+"차":null).filter(Boolean).join("+");t+=`${memberName(p.id)} ${won(c.pt[i])}원 (${rs||"-"}${c.cp[i]?", 카풀 "+won(c.cp[i]):""})${p.paid?" 입금완료":""}\n`});
+  const un=s.people.filter(p=>!p.paid).map(p=>memberName(p.id));
+  if(un.length)t+=`\n미입금: ${un.join(", ")}`;
+  $("#copyTitle").textContent="정산 내역";$("#copyText").value=t.trim(); $("#copyDlg").showModal();
+}
+$("#copyClose").addEventListener("click",()=>$("#copyDlg").close());
+$("#copyDo").addEventListener("click",async()=>{
+  const ta=$("#copyText");
+  try{await navigator.clipboard.writeText(ta.value);toast("복사했어요")}
+  catch(e){ta.focus();ta.select();try{document.execCommand("copy");toast("복사했어요")}catch(_){toast("텍스트를 길게 눌러 직접 복사해 주세요")}}
+});
+
+/* ---------- confirm ---------- */
+function ask(msg,yes){
+  return new Promise(res=>{
+    const d=$("#askDlg");$("#askMsg").textContent=msg;$("#askYes").textContent=yes||"확인";
+    const done=v=>{$("#askYes").onclick=$("#askNo").onclick=null;d.onclose=null;if(d.open)d.close();res(v)};
+    $("#askYes").onclick=()=>done(true);$("#askNo").onclick=()=>done(false);d.onclose=()=>done(false);
+    d.showModal();
+  });
+}
+let tt;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2200)}
+
+/* ---------- render all ---------- */
+function renderAll(){renderHeader();renderMembers();renderCalendar();renderSettleList();if(!$("#tab-rank").hidden)renderRank()}
+function onRemote(col){
+  renderHeader();renderMembers();renderCalendar();renderSettleList();
+  {
+    if(selSettle&&!state.settles[selSettle]){selSettle=null;draft=null;renderSettleEditor();return}
+    const focusIn=ed.contains(document.activeElement)&&document.activeElement.tagName!=="BUTTON";
+    if(!dirty&&!focusIn){if(selSettle)loadDraft();renderSettleEditor()}
+  }
+}
+function setSync(t){$("#sync").textContent=t}
+
+/* ---------- boot (앱: 구글 시트 API) ---------- */
+const API=(window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"";
+let pw="";try{pw=localStorage.getItem("hc-pw")||""}catch(e){}
+let pending=0,writeSeq=0;
+function isAuth(e){return /AUTH/.test(String(e&&e.message||e))}
+async function api(action,params){
+  if(!/^https:\/\/script\.google\.com\//.test(API))throw new Error("NOURL");
+  const body=Object.assign({action,pw},params||{});
+  let r;
+  if(action==="getAll"||action==="event"){
+    const q=new URLSearchParams();Object.keys(body).forEach(k=>q.set(k,body[k]==null?"":body[k]));
+    r=await fetch(API+"?"+q.toString(),{redirect:"follow"});
+  }else{
+    r=await fetch(API,{method:"POST",body:JSON.stringify(body),redirect:"follow"});
+  }
+  const j=await r.json();
+  if(!j.ok)throw new Error(j.error||"FAIL");
+  return j.data;
+}
+async function gas(fn,...args){
+  if(fn!=="getAll")writeSeq++;
+  pending++;
+  try{
+    if(fn==="getAll")return JSON.stringify(await api("getAll"));
+    if(fn==="put")return await api("put",{col:args[0],id:args[1],json:args[2]});
+    if(fn==="remove")return await api("remove",{col:args[0],id:args[1]});
+  }finally{pending--}
+}
+function applyAll(o){["members","events","settles","config"].forEach(k=>state[k]=o[k]||{})}
+async function boot(){
+  mode="gas"; setSync("불러오는 중…");
+  try{
+    applyAll(JSON.parse(await gas("getAll")));
+    setSync("운영진이 함께 쓰는 공유 출석부예요");
+    if(selSettle)loadDraft();
+    renderAll();renderSettleEditor();
+  }catch(e){
+    if(isAuth(e)){setSync("비밀번호를 입력해 주세요");askPw()}
+    else if(/NOURL/.test(String(e&&e.message)))setSync("config.js에 구글 앱스 스크립트 주소를 넣어 주세요");
+    else setSync("불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요");
+  }
+}
+async function refresh(){
+  if(mode!=="gas"||pending>0||dirty||document.hidden||document.body.classList.contains("ci-mode"))return;
+  const seq=writeSeq;
+  try{
+    const o=JSON.parse(await gas("getAll"));
+    if(seq!==writeSeq||pending>0||dirty)return;
+    applyAll(o); onRemote("all");
+  }catch(e){if(isAuth(e))askPw()}
+}
+function askPw(){
+  const d=$("#pwDlg"); if(d.open)return;
+  $("#pwIn").value=""; d.showModal(); $("#pwIn").focus();
+}
+$("#pwOk").addEventListener("click",()=>{
+  pw=$("#pwIn").value.trim(); try{localStorage.setItem("hc-pw",pw)}catch(e){}
+  $("#pwDlg").close(); boot();
+});
+$("#pwIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("#pwOk").click()}});
+
+/* ---------- 회원 참석 체크 화면 (#c=일정ID) ---------- */
+let ci=null;
+async function bootCheckin(id){
+  document.body.classList.add("ci-mode"); $("#checkin").hidden=false;
+  try{ci=await api("event",{id});}
+  catch(e){
+    const m=String(e&&e.message);
+    $("#ciTitle").textContent=/NOEVENT/.test(m)?"일정을 찾을 수 없어요":"불러오지 못했어요";
+    $("#ciSub").textContent=/NOEVENT/.test(m)?"운영진에게 링크를 다시 받아 주세요.":"인터넷 연결을 확인하고 새로고침해 주세요.";
+    $("#ciSearch").hidden=true;return;
+  }
+  $("#ciClub").textContent=ci.clubName; document.title=ci.clubName+" 참석 체크";
+  $("#ciTitle").textContent=`${dayLabel(ci.event.date)} ${ci.event.place||"산행"}`;
+  if(!ci.open){$("#ciSub").textContent="참석 체크 기간이 끝났어요. 수정이 필요하면 운영진에게 말씀해 주세요.";}
+  renderCheckin();
+}
+function renderCheckin(){
+  const att=new Set(ci.event.attendees), q=norm($("#ciSearch").value);
+  $("#ciCount").textContent=`지금까지 ${att.size}명 참석`;
+  const list=ci.members.filter(m=>!q||norm(m.name).includes(q));
+  $("#ciList").innerHTML=list.length?list.map(m=>`<button class="chip" data-ci="${esc(m.id)}" aria-pressed="${att.has(m.id)}" ${ci.open?"":"disabled"}>${att.has(m.id)?"✓ ":""}${esc(m.name)}</button>`).join(""):`<span class="sub">찾는 닉네임이 없어요. 운영진에게 명단 추가를 부탁해 주세요.</span>`;
+}
+$("#ciSearch").addEventListener("input",()=>ci&&renderCheckin());
+$("#ciList").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-ci]");if(!b||!ci||!ci.open)return;
+  const id=b.dataset.ci, m=ci.members.find(x=>x.id===id), on=!ci.event.attendees.includes(id);
+  if(!await ask(on?`${m.name} 님, 참석으로 표시할까요?`:`${m.name} 님 참석을 취소할까요?`,on?"참석":"취소하기"))return;
+  b.disabled=true;
+  try{const r=await api("checkin",{id:ci.event.id,member:id,on});ci.event.attendees=r.attendees;renderCheckin();toast(on?"참석으로 표시했어요":"취소했어요")}
+  catch(err){const msg=String(err&&err.message);toast(/CLOSED/.test(msg)?"참석 체크 기간이 끝났어요":"저장하지 못했어요. 다시 시도해 주세요");b.disabled=false}
+});
+
+const ciMatch=location.hash.match(/^#c=([\w-]+)/);
+if(ciMatch){bootCheckin(ciMatch[1]);}
+else{
+  renderAll(); renderSettleEditor(); boot();
+  setInterval(refresh,20000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
+}
+if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+window.addEventListener("pagehide",flushSave);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)flushSave()});
+// refresh day counts after midnight
+setInterval(()=>{const t=today();if(t!==renderAll.lastDay){renderAll.lastDay=t;renderHeader();renderMembers();renderCalendar()}},60000);
+renderAll.lastDay=today();
+})();
+</script>
+</body>
+</html>
