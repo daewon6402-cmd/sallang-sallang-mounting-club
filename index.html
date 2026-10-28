@@ -689,7 +689,14 @@ $("#todayM").addEventListener("click",()=>{const d=new Date();view.y=d.getFullYe
 $("#btnNewEvent").addEventListener("click",()=>{ev={id:null,date:today(),place:"",memo:"",att:new Set()};renderEvDlg();$("#evDlg").showModal()});
 
 /* ---------- tabs ---------- */
-function setTab(t){
+let curTab="att", tabLayer=false;
+function setTab(t,fromPop){
+  // 뒤로가기 버튼: 출석 탭이 아닌 화면에서 뒤로가기를 누르면 출석 탭으로 돌아오게 기록
+  if(!fromPop&&window.__nav){
+    if(t!=="att"&&!tabLayer){history.pushState({layer:"tab"},"");tabLayer=true}
+    else if(t==="att"&&tabLayer){tabLayer=false;window.__nav.skip++;history.back()}
+  }
+  curTab=t;
   ["att","pay","rank"].forEach(k=>{$("#t-"+k).setAttribute("aria-selected",t===k);$("#tab-"+k).hidden=t!==k});
   if(t==="pay"){renderSettleList();renderSettleEditor()}
   if(t==="rank")renderRank();
@@ -1173,6 +1180,36 @@ $("#ciList").addEventListener("click",async e=>{
   try{const r=await api("checkin",{id:ci.event.id,member:id,on});ci.event.attendees=r.attendees;renderCheckin();toast(on?"참석으로 표시했어요":"취소했어요")}
   catch(err){const msg=String(err&&err.message);toast(/CLOSED/.test(msg)?"참석 체크 기간이 끝났어요":"저장하지 못했어요. 다시 시도해 주세요");b.disabled=false}
 });
+
+/* ---------- 휴대폰 뒤로가기 버튼 ----------
+   열린 창이 있으면 창만 닫고, 정산/참석률 탭이면 출석 탭으로,
+   첫 화면에서는 한 번 더 누르면 앱이 종료돼요. */
+(function(){
+  const nav=window.__nav={skip:0};
+  let layers=0, popClosing=false, lastBack=0;
+  const openDlgs=()=>[...document.querySelectorAll("dialog[open]")];
+  const sm=HTMLDialogElement.prototype.showModal;
+  HTMLDialogElement.prototype.showModal=function(){
+    const before=openDlgs().length;
+    sm.call(this);
+    if(layers<=before){history.pushState({layer:"dlg"},"");layers++}
+  };
+  document.querySelectorAll("dialog").forEach(d=>d.addEventListener("close",()=>{
+    if(popClosing)return;
+    setTimeout(()=>{if(layers>openDlgs().length){layers--;nav.skip++;history.back()}},0);
+  }));
+  window.addEventListener("popstate",()=>{
+    if(nav.skip>0){nav.skip--;return}
+    const open=openDlgs();
+    if(open.length){layers=Math.max(0,layers-1);popClosing=true;try{open[open.length-1].close()}finally{popClosing=false}return}
+    layers=0;
+    if(tabLayer){tabLayer=false;setTab("att",true);return}
+    if(Date.now()-lastBack<2000){history.back();return}
+    lastBack=Date.now();toast("뒤로 버튼을 한 번 더 누르면 종료돼요");
+    history.pushState({layer:"root"},"");
+  });
+  history.pushState({layer:"root"},"");
+})();
 
 const ciMatch=location.hash.match(/^#c=([\w-]+)/);
 if(ciMatch){bootCheckin(ciMatch[1]);}
