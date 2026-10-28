@@ -1086,7 +1086,8 @@ function onRemote(col){
     if(!dirty&&!focusIn){if(selSettle)loadDraft();renderSettleEditor()}
   }
 }
-function setSync(t){$("#sync").textContent=t}
+const APP_VER="1.5";
+function setSync(t){$("#sync").textContent=t+"  (앱 버전 "+APP_VER+")"}
 
 /* ---------- boot (앱: 구글 시트 API) ---------- */
 const API=(window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"";
@@ -1204,11 +1205,14 @@ $("#ciList").addEventListener("click",async e=>{
     if(open.length){layers=Math.max(0,layers-1);popClosing=true;try{open[open.length-1].close()}finally{popClosing=false}return}
     layers=0;
     if(tabLayer){tabLayer=false;setTab("att",true);return}
+    // 첫 화면: 보호용 기록이 빠졌으니 안내만 하고, 다음 뒤로가기는 앱 종료
+    armed=false;
     if(Date.now()-lastBack<2000){history.back();return}
     lastBack=Date.now();toast("뒤로 버튼을 한 번 더 누르면 종료돼요");
-    history.pushState({layer:"root"},"");
   });
-  history.pushState({layer:"root"},"");
+  // 크롬은 화면을 터치하기 전에 만든 기록을 뒤로가기에서 건너뛰어서, 화면을 처음 누를 때 보호용 기록을 만들어요
+  let armed=false;
+  document.addEventListener("click",()=>{if(!armed){armed=true;history.pushState({layer:"root"},"")}},true);
 })();
 
 const ciMatch=location.hash.match(/^#c=([\w-]+)/);

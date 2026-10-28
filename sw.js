@@ -1,5 +1,5 @@
-// 앱 화면을 저장해 두고, 인터넷이 되면 항상 최신 화면을 먼저 받아와요.
-const CACHE = "hiking-club-v1";
+// 앱 화면을 저장해 두고, 인터넷이 되면 항상 최신 화면을 먼저 받아와요(브라우저 임시 저장 무시).
+const CACHE = "hiking-club-v2";
 const SHELL = ["./", "./index.html", "./config.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -11,7 +11,7 @@ self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request).then(r => {
+    fetch(e.request, { cache: "no-store" }).then(r => {
       const copy = r.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy));
       return r;
