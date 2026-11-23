@@ -432,7 +432,8 @@ function attendedIds(e){return (e.attendees||[]).filter(id=>attended(e,id))}
 // 정기산행: 매달 넷째 주 일요일(22~28일), 정기모임: 매달 둘째 주 금요일(8~14일)
 function isFourthSun(ds){const d=parse(ds);return d.getDay()===0&&d.getDate()>=22&&d.getDate()<=28}
 function isSecondFri(ds){const d=parse(ds);return d.getDay()===5&&d.getDate()>=8&&d.getDate()<=14}
-function isRegular(e){return e.regular!=null?!!e.regular:isFourthSun(e.date)}
+// 정기모임(둘째 주 금요일)은 90일 주기 적용 안 함
+function isRegular(e){if(isSecondFri(e.date))return false;return e.regular!=null?!!e.regular:isFourthSun(e.date)}
 function addDays(ds,n){const d=parse(ds);d.setDate(d.getDate()+n);return fmt(d)}
 function statusOf(m){
   const t=today(), c=cfg(); let last=null, count=0;
@@ -483,7 +484,7 @@ function renderHeader(){
   const cnt={ok:0,warn:0,bad:0,out:0,warned:0,staff:0};
   Object.values(state.members).forEach(m=>{const s=statusOf(m);cnt[s.level]++;if(s.warned&&!s.out)cnt.warned++});
   $("#stats").innerHTML=`<span class="stat" style="background:var(--ridge);color:var(--surface)"><b>${Object.keys(state.members).length}</b>총원</span><span class="stat" style="background:none;border:1px solid var(--ridge);color:var(--ridge)"><b>${cnt.staff}</b>운영진</span><span class="stat ok"><b>${cnt.ok}</b>꾸준히</span><span class="stat warn"><b>${cnt.warn}</b>주의</span><span class="stat bad"><b>${cnt.bad}</b>위험</span><span class="stat bad" style="background:none;border:1px solid var(--bad)"><b>${cnt.warned}</b>경고 대상</span><span class="stat" style="background:var(--bad);color:var(--surface)"><b>${cnt.out}</b>퇴장 대상</span>`;
-  $("#legend").innerHTML=`<span><i class="dot ok"></i>${c.caution}일 미만</span><span><i class="dot warn"></i>${c.caution}일부터</span><span><i class="dot bad"></i>${c.danger}일부터</span><span>경고 ${c.warn}일</span><span><i class="dot out"></i>퇴장 대상 ${c.exit}일</span><span>신입은 가입 ${c.newbieDays}일 안에 첫 산행</span><span>운영진은 제한 없음, 휴식 회원은 퇴장 기준 ${c.leaveDays}일</span><span>넷째 주 일요일 정기산행 참석 시 ${c.regularDays}일</span>`;
+  $("#legend").innerHTML=`<span><i class="dot ok"></i>${c.caution}일 미만</span><span><i class="dot warn"></i>${c.caution}일부터</span><span><i class="dot bad"></i>${c.danger}일부터</span><span>경고 ${c.warn}일</span><span><i class="dot out"></i>퇴장 대상 ${c.exit}일</span><span>신입은 가입 ${c.newbieDays}일 안에 첫 산행</span><span>운영진은 제한 없음, 휴식 회원은 퇴장 기준 ${c.leaveDays}일</span><span>넷째 주 일요일 정기산행 참석 시 ${c.regularDays}일 (정기모임은 해당 없음)</span>`;
 }
 
 /* ---------- render: members ---------- */
@@ -504,7 +505,7 @@ function renderMembers(){
     else if(s.newbie)badge=`첫 산행 D-${s.newbie.left}`;
     else if(s.warned){const over=s.eff-s.warnAt;badge=over===0?"오늘 경고":`경고 +${over}일`}
     else badge=`경고까지 ${s.toWarn}일`;
-    return `<li><button class="mrow lv-${s.level}" data-mid="${esc(m.id)}"><span class="mname">${esc(m.name)}${s.staff?'<span class="tag staff">운영진</span>':''}${s.leave?'<span class="tag leave">휴식</span>':''}${s.regularExt?'<span class="tag reg">정기</span>':''}${s.newbie?'<span class="tag">신입</span>':''}${nameCnt[norm(m.name)]>1?'<span class="dupflag">중복?</span>':''}</span><span class="mlast"><b>${view.m+1}월 ${ms.per[m.id]||0}회</b>${last}</span><span class="mbadge">${badge}</span></button></li>`;
+    return `<li><button class="mrow lv-${s.level}" data-mid="${esc(m.id)}"><span class="mname">${esc(m.name)}${s.staff?'<span class="tag staff">운영진</span>':''}${s.leave?'<span class="tag leave">휴식</span>':''}${s.regularExt?'<span class="tag reg">정기산행</span>':''}${s.newbie?'<span class="tag">신입</span>':''}${nameCnt[norm(m.name)]>1?'<span class="dupflag">중복?</span>':''}</span><span class="mlast"><b>${view.m+1}월 ${ms.per[m.id]||0}회</b>${last}</span><span class="mbadge">${badge}</span></button></li>`;
   }).join("");
 }
 
@@ -557,7 +558,7 @@ function renderEvDlg(){
     <label class="f" for="evPlace">어디에 갔나요</label><input type="text" id="evPlace" value="${esc(ev.place)}" placeholder="예: 팔공산 동봉 코스">
     <label class="f" for="evHost">벙주</label><select id="evHost"><option value="">선택 안 함</option>${members.map(m=>`<option value="${esc(m.id)}" ${m.id===ev.host?"selected":""}>${esc(m.name)}</option>`).join("")}</select>
     <p class="hostwarn" id="hostWarn">${hostWarn(ev.host,ev.date,ev.id)}</p>
-    <label class="chk"><input type="checkbox" id="evReg" ${ev.regular?"checked":""}> 정기산행 (참석자는 활동 주기 ${cfg().regularDays}일)</label>
+    <label class="chk"><input type="checkbox" id="evReg" ${ev.regular&&!isSecondFri(ev.date)?"checked":""} ${isSecondFri(ev.date)?"disabled":""}> 정기산행 (참석자는 활동 주기 ${cfg().regularDays}일)${isSecondFri(ev.date)?" · 정기모임 날은 해당 없음":""}</label>
     <label class="f">참석자 <span id="attCount">${ev.att.size}명</span></label>
     <div class="chips" id="evChips">${chips}</div>
     <div class="add-row needs-write" style="margin-top:8px"><input type="text" id="evNewMem" placeholder="명단에 없는 사람 추가" autocomplete="off"><button class="btn" id="evAddMem">추가</button></div>
@@ -609,7 +610,7 @@ $("#evBody").addEventListener("click",async e=>{
       syncEvFields(); const e0=state.events[ev.id]; $("#evDlg").close(); createSettleFromEvent(e0); break}
   }
 });
-$("#evBody").addEventListener("change",e=>{if(e.target.id==="evDate"){const r=$("#evReg");if(r)r.checked=isFourthSun($("#evDate").value||ev.date)}
+$("#evBody").addEventListener("change",e=>{if(e.target.id==="evDate"){const r=$("#evReg");const nd=$("#evDate").value||ev.date;if(r){r.checked=isFourthSun(nd);r.disabled=isSecondFri(nd)}}
   if(e.target.id==="evHost"||e.target.id==="evDate"){syncEvFields();const w=$("#hostWarn");if(w)w.textContent=hostWarn(ev.host,ev.date,ev.id)}});
 $("#evBody").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="evNewMem"){e.preventDefault();$("#evAddMem").click()}});
 
@@ -1107,7 +1108,7 @@ function onRemote(col){
     if(!dirty&&!focusIn){if(selSettle)loadDraft();renderSettleEditor()}
   }
 }
-const APP_VER="1.7";
+const APP_VER="1.8";
 function setSync(t){$("#sync").textContent=t+"  (앱 버전 "+APP_VER+")"}
 
 /* ---------- boot (앱: 구글 시트 API) ---------- */
